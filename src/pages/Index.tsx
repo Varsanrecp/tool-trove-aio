@@ -2,16 +2,41 @@
 import { useState } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { CategoryGrid } from '@/components/CategoryGrid';
+import { CategoryFilter } from '@/components/CategoryFilter';
 import { ToolCard } from '@/components/ToolCard';
 import { tools } from '@/lib/tools';
+import { GridIcon, ListIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [search, setSearch] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isGridView, setIsGridView] = useState(true);
+  const [sortBy, setSortBy] = useState<"name" | "rating" | "popularity">("rating");
   
-  const filteredTools = tools.filter((tool) =>
-    tool.name.toLowerCase().includes(search.toLowerCase()) ||
-    tool.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTools = tools
+    .filter((tool) => {
+      const matchesSearch = 
+        tool.name.toLowerCase().includes(search.toLowerCase()) ||
+        tool.description.toLowerCase().includes(search.toLowerCase()) ||
+        tool.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()));
+      
+      const matchesCategories = 
+        selectedCategories.length === 0 || 
+        selectedCategories.includes(tool.category);
+      
+      return matchesSearch && matchesCategories;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "rating":
+          return b.rating - a.rating;
+        case "popularity":
+          return b.popularity - a.popularity;
+      }
+    });
 
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8">
@@ -35,10 +60,58 @@ const Index = () => {
           <CategoryGrid />
         </div>
 
-        {/* Tools Grid */}
+        {/* Tools Section */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-semibold">Featured Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Featured Tools</h2>
+            <div className="flex items-center gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 glass rounded-lg p-1">
+                <button
+                  onClick={() => setIsGridView(true)}
+                  className={cn(
+                    "p-2 rounded-md transition-colors",
+                    isGridView ? "bg-primary text-primary-foreground" : "text-gray-400"
+                  )}
+                >
+                  <GridIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setIsGridView(false)}
+                  className={cn(
+                    "p-2 rounded-md transition-colors",
+                    !isGridView ? "bg-primary text-primary-foreground" : "text-gray-400"
+                  )}
+                >
+                  <ListIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Sort Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="glass rounded-lg px-4 py-2 text-sm text-white"
+              >
+                <option value="rating">Sort by Rating</option>
+                <option value="popularity">Sort by Popularity</option>
+                <option value="name">Sort by Name</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Category Filters */}
+          <CategoryFilter
+            selectedCategories={selectedCategories}
+            onChange={setSelectedCategories}
+          />
+
+          {/* Tools Grid/List */}
+          <div className={cn(
+            isGridView
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "space-y-4"
+          )}>
             {filteredTools.map((tool) => (
               <ToolCard key={tool.id} tool={tool} />
             ))}

@@ -1,8 +1,9 @@
 
 import { Tool } from '@/lib/tools';
 import { useBookmark } from '@/hooks/useBookmark';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Star, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface ToolCardProps {
   tool: Tool;
@@ -11,6 +12,17 @@ interface ToolCardProps {
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const { isBookmarked, toggleBookmark } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
+
+  const getPricingColor = (pricing: Tool['pricing']) => {
+    switch (pricing) {
+      case 'free':
+        return 'bg-green-500/20 text-green-500';
+      case 'paid':
+        return 'bg-blue-500/20 text-blue-500';
+      case 'trial':
+        return 'bg-yellow-500/20 text-yellow-500';
+    }
+  };
 
   return (
     <div className="glass rounded-lg overflow-hidden hover-card">
@@ -32,12 +44,34 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             )}
           />
         </button>
+        <div className="absolute top-4 left-4">
+          <Badge className={cn("capitalize", getPricingColor(tool.pricing))}>
+            {tool.pricing}
+          </Badge>
+        </div>
       </div>
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold text-white">{tool.name}</h3>
             <p className="text-sm text-gray-400 mt-1">{tool.description}</p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4 flex-wrap">
+          {tool.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="capitalize">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+        <div className="flex items-center gap-4 mt-4">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm text-gray-400">{tool.rating}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="w-4 h-4 text-blue-500" />
+            <span className="text-sm text-gray-400">{tool.popularity}</span>
           </div>
         </div>
         <div className="mt-4">

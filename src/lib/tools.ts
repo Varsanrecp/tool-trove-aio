@@ -7,6 +7,10 @@ export interface Tool {
   url: string;
   imageUrl: string;
   featured: boolean;
+  pricing: "free" | "paid" | "trial";
+  tags: string[];
+  rating: number;
+  popularity: number;
 }
 
 export interface Category {
@@ -52,6 +56,10 @@ export const tools: Tool[] = [
     url: "https://chat.openai.com",
     imageUrl: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
     featured: true,
+    pricing: "free",
+    tags: ["language", "conversation", "writing"],
+    rating: 4.8,
+    popularity: 1000,
   },
   {
     id: "2",
@@ -61,6 +69,10 @@ export const tools: Tool[] = [
     url: "https://labs.openai.com",
     imageUrl: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
     featured: true,
+    pricing: "paid",
+    tags: ["images", "art", "creative"],
+    rating: 4.6,
+    popularity: 850,
   },
   {
     id: "3",
@@ -70,5 +82,9 @@ export const tools: Tool[] = [
     url: "https://notion.so",
     imageUrl: "https://images.unsplash.com/photo-1531297484001-80022131f5a1",
     featured: true,
+    pricing: "trial",
+    tags: ["productivity", "writing", "organization"],
+    rating: 4.7,
+    popularity: 920,
   },
 ];
