@@ -5,8 +5,15 @@ import { CategoryGrid } from '@/components/CategoryGrid';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { ToolCard } from '@/components/ToolCard';
 import { tools } from '@/lib/tools';
-import { GridIcon, ListIcon } from 'lucide-react';
+import { GridIcon, ListIcon, SortAsc, Star, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -87,16 +94,29 @@ const Index = () => {
                 </button>
               </div>
               
-              {/* Sort Dropdown */}
-              <select
+              {/* Enhanced Sort Dropdown */}
+              <Select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="glass rounded-lg px-4 py-2 text-sm text-white"
+                onValueChange={(value) => setSortBy(value as typeof sortBy)}
               >
-                <option value="rating">Sort by Rating</option>
-                <option value="popularity">Sort by Popularity</option>
-                <option value="name">Sort by Name</option>
-              </select>
+                <SelectTrigger className="w-[180px] glass">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rating" className="flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    <span>Highest Rated</span>
+                  </SelectItem>
+                  <SelectItem value="popularity" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>Most Popular</span>
+                  </SelectItem>
+                  <SelectItem value="name" className="flex items-center gap-2">
+                    <SortAsc className="w-4 h-4" />
+                    <span>Alphabetical</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
