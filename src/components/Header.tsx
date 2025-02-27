@@ -1,16 +1,19 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Wrench, Bookmark } from 'lucide-react';
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
 import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
 
 export const Header = () => {
   const location = useLocation();
+  const { isSignedIn } = useUser();
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-      <div className="container flex h-16 items-center">
+      <div className="container flex h-16 items-center justify-between">
         <nav className="flex items-center space-x-6 text-sm font-medium">
           <Link
             to="/"
@@ -32,17 +35,38 @@ export const Header = () => {
             <Wrench className="h-4 w-4" />
             <span>Tools</span>
           </Link>
-          <Link
-            to="/saved"
-            className={cn(
-              "flex items-center space-x-2 transition-colors hover:text-primary",
-              isActive('/saved') ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <Bookmark className="h-4 w-4" />
-            <span>Saved Tools</span>
-          </Link>
+          {isSignedIn && (
+            <Link
+              to="/saved"
+              className={cn(
+                "flex items-center space-x-2 transition-colors hover:text-primary",
+                isActive('/saved') ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <Bookmark className="h-4 w-4" />
+              <span>Saved Tools</span>
+            </Link>
+          )}
         </nav>
+        
+        <div className="flex items-center gap-4">
+          {!isSignedIn ? (
+            <>
+              <SignInButton mode="modal">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button variant="default" size="sm">
+                  Sign Up
+                </Button>
+              </SignUpButton>
+            </>
+          ) : (
+            <UserButton afterSignOutUrl="/" />
+          )}
+        </div>
       </div>
     </header>
   );
