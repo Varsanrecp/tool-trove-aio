@@ -9,18 +9,28 @@ interface BookmarkCollection {
   tools: string[];
 }
 
+interface UserRatings {
+  [toolId: string]: number;
+}
+
 export const useBookmark = () => {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
+  const [userRatings, setUserRatings] = useState<UserRatings>({});
 
   useEffect(() => {
     const stored = localStorage.getItem('bookmarks');
     const storedCollections = localStorage.getItem('bookmark-collections');
+    const storedRatings = localStorage.getItem('user-ratings');
+    
     if (stored) {
       setBookmarks(JSON.parse(stored));
     }
     if (storedCollections) {
       setCollections(JSON.parse(storedCollections));
+    }
+    if (storedRatings) {
+      setUserRatings(JSON.parse(storedRatings));
     }
   }, []);
 
@@ -41,6 +51,29 @@ export const useBookmark = () => {
       
       return newBookmarks;
     });
+  };
+
+  const hasRated = (toolId: string) => {
+    return userRatings.hasOwnProperty(toolId);
+  };
+
+  const getUserRating = (toolId: string) => {
+    return userRatings[toolId] || 0;
+  };
+
+  const rateTool = (toolId: string, rating: number) => {
+    if (hasRated(toolId)) {
+      toast.error("You have already rated this tool");
+      return false;
+    }
+
+    setUserRatings(prev => {
+      const newRatings = { ...prev, [toolId]: rating };
+      localStorage.setItem('user-ratings', JSON.stringify(newRatings));
+      return newRatings;
+    });
+
+    return true;
   };
 
   const createCollection = (name: string) => {
@@ -78,6 +111,9 @@ export const useBookmark = () => {
     toggleBookmark,
     isBookmarked,
     createCollection,
-    addToCollection
+    addToCollection,
+    rateTool,
+    hasRated,
+    getUserRating
   };
 };

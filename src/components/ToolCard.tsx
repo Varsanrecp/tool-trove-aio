@@ -13,11 +13,12 @@ interface ToolCardProps {
 }
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
-  const { isBookmarked, toggleBookmark } = useBookmark();
+  const { isBookmarked, toggleBookmark, rateTool, hasRated, getUserRating } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
   const { isSignedIn } = useUser();
-  const [localRating, setLocalRating] = useState(tool.rating);
+  const [localRating, setLocalRating] = useState(() => getUserRating(tool.id) || tool.rating);
   const [localRatingCount, setLocalRatingCount] = useState(tool.ratingCount);
+  const [localPopularity, setLocalPopularity] = useState(tool.popularity);
 
   const getPricingColor = (pricing: Tool['pricing']) => {
     switch (pricing) {
@@ -36,24 +37,38 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
       return;
     }
 
-    setLocalRating(rating);
-    setLocalRatingCount(prev => prev + 1);
-    toast.success("Thank you for rating!");
+    if (hasRated(tool.id)) {
+      toast.error("You have already rated this tool");
+      return;
+    }
+
+    if (rateTool(tool.id, rating)) {
+      setLocalRating(rating);
+      setLocalRatingCount(prev => prev + 1);
+      setLocalPopularity(prev => prev + 1);
+      toast.success("Thank you for rating!");
+    }
   };
 
   const renderStars = () => {
+    const userRating = getUserRating(tool.id);
+    
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             onClick={() => handleRating(star)}
-            className="focus:outline-none"
+            disabled={hasRated(tool.id)}
+            className={cn(
+              "focus:outline-none",
+              hasRated(tool.id) && "cursor-not-allowed"
+            )}
           >
             <Star
               className={cn(
                 "w-5 h-5 transition-colors",
-                star <= localRating
+                star <= (userRating || localRating)
                   ? "fill-yellow-500 text-yellow-500"
                   : "text-gray-300"
               )}
@@ -111,7 +126,7 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           </div>
           <div className="flex items-center gap-1">
             <Users className="w-4 h-4 text-blue-500" />
-            <span className="text-sm text-gray-400">{tool.popularity}</span>
+            <span className="text-sm text-gray-400">{localPopularity}</span>
           </div>
         </div>
         <div className="mt-4">
