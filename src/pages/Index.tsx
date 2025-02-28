@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { CategoryGrid } from '@/components/CategoryGrid';
@@ -12,6 +13,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
+  SelectLabel,
 } from "@/components/ui/select";
 
 const Index = () => {
@@ -104,6 +107,10 @@ const Index = () => {
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectLabel className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                    Sort by
+                  </SelectLabel>
+                  <SelectSeparator />
                   <SelectItem value="upvotes" className="flex items-center gap-2">
                     <ThumbsUp className="w-4 h-4" />
                     <span>Highest Upvotes</span>

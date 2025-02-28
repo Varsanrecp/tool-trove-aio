@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tool } from '@/lib/tools';
 import { toast } from 'sonner';
+import { useUser } from '@clerk/clerk-react';
 
 interface BookmarkCollection {
   id: string;
@@ -24,6 +25,7 @@ export const useBookmark = () => {
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
   const [userVotes, setUserVotes] = useState<UserVotes>({});
   const [toolVotes, setToolVotes] = useState<ToolVotes>({});
+  const { isSignedIn } = useUser();
 
   useEffect(() => {
     const stored = localStorage.getItem('bookmarks');
@@ -46,6 +48,17 @@ export const useBookmark = () => {
   }, []);
 
   const toggleBookmark = (tool: Tool) => {
+    if (!isSignedIn) {
+      toast.error("Please sign in to save tools", {
+        description: "You need to be signed in to save tools to your collection.",
+        action: {
+          label: "Sign In",
+          onClick: () => document.querySelector<HTMLButtonElement>('[data-clerk-trigger]')?.click(),
+        },
+      });
+      return;
+    }
+
     setBookmarks((prev) => {
       const newBookmarks = prev.includes(tool.id)
         ? prev.filter((id) => id !== tool.id)
