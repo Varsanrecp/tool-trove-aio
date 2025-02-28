@@ -13,15 +13,25 @@ interface UserRatings {
   [toolId: string]: number;
 }
 
+interface ToolRatings {
+  [toolId: string]: {
+    totalRating: number;
+    ratingCount: number;
+    averageRating: number;
+  };
+}
+
 export const useBookmark = () => {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
   const [userRatings, setUserRatings] = useState<UserRatings>({});
+  const [toolRatings, setToolRatings] = useState<ToolRatings>({});
 
   useEffect(() => {
     const stored = localStorage.getItem('bookmarks');
     const storedCollections = localStorage.getItem('bookmark-collections');
     const storedRatings = localStorage.getItem('user-ratings');
+    const storedToolRatings = localStorage.getItem('tool-ratings');
     
     if (stored) {
       setBookmarks(JSON.parse(stored));
@@ -31,6 +41,9 @@ export const useBookmark = () => {
     }
     if (storedRatings) {
       setUserRatings(JSON.parse(storedRatings));
+    }
+    if (storedToolRatings) {
+      setToolRatings(JSON.parse(storedToolRatings));
     }
   }, []);
 
@@ -61,6 +74,10 @@ export const useBookmark = () => {
     return userRatings[toolId] || 0;
   };
 
+  const getToolRating = (toolId: string) => {
+    return toolRatings[toolId] || { totalRating: 0, ratingCount: 0, averageRating: 0 };
+  };
+
   const rateTool = (toolId: string, rating: number) => {
     if (hasRated(toolId)) {
       toast.error("You have already rated this tool");
@@ -71,6 +88,18 @@ export const useBookmark = () => {
       const newRatings = { ...prev, [toolId]: rating };
       localStorage.setItem('user-ratings', JSON.stringify(newRatings));
       return newRatings;
+    });
+
+    setToolRatings(prev => {
+      const currentRating = prev[toolId] || { totalRating: 0, ratingCount: 0, averageRating: 0 };
+      const newRating = {
+        totalRating: currentRating.totalRating + rating,
+        ratingCount: currentRating.ratingCount + 1,
+        averageRating: (currentRating.totalRating + rating) / (currentRating.ratingCount + 1)
+      };
+      const newToolRatings = { ...prev, [toolId]: newRating };
+      localStorage.setItem('tool-ratings', JSON.stringify(newToolRatings));
+      return newToolRatings;
     });
 
     return true;
@@ -114,6 +143,7 @@ export const useBookmark = () => {
     addToCollection,
     rateTool,
     hasRated,
-    getUserRating
+    getUserRating,
+    getToolRating
   };
 };

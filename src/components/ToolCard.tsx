@@ -1,9 +1,10 @@
 
 import { Tool } from '@/lib/tools';
 import { useBookmark } from '@/hooks/useBookmark';
-import { Bookmark, Star, Users } from 'lucide-react';
+import { Bookmark, Star, Users, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
@@ -13,12 +14,13 @@ interface ToolCardProps {
 }
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
-  const { isBookmarked, toggleBookmark, rateTool, hasRated, getUserRating } = useBookmark();
+  const { isBookmarked, toggleBookmark, rateTool, hasRated, getUserRating, getToolRating } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
   const { isSignedIn } = useUser();
-  const [localRating, setLocalRating] = useState(() => getUserRating(tool.id) || tool.rating);
-  const [localRatingCount, setLocalRatingCount] = useState(tool.ratingCount);
-  const [localPopularity, setLocalPopularity] = useState(tool.popularity);
+  const [pendingRating, setPendingRating] = useState<number | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const toolRating = getToolRating(tool.id);
+  const userRating = getUserRating(tool.id);
 
   const getPricingColor = (pricing: Tool['pricing']) => {
     switch (pricing) {
@@ -31,7 +33,7 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
     }
   };
 
-  const handleRating = (rating: number) => {
+  const handleStarClick = (rating: number) => {
     if (!isSignedIn) {
       toast.error("Please sign in to rate tools");
       return;
@@ -42,23 +44,25 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
       return;
     }
 
-    if (rateTool(tool.id, rating)) {
-      setLocalRating(rating);
-      setLocalRatingCount(prev => prev + 1);
-      setLocalPopularity(prev => prev + 1);
+    setPendingRating(rating);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmRating = () => {
+    if (pendingRating && rateTool(tool.id, pendingRating)) {
       toast.success("Thank you for rating!");
+      setShowConfirm(false);
+      setPendingRating(null);
     }
   };
 
   const renderStars = () => {
-    const userRating = getUserRating(tool.id);
-    
     return (
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            onClick={() => handleRating(star)}
+            onClick={() => handleStarClick(star)}
             disabled={hasRated(tool.id)}
             className={cn(
               "focus:outline-none",
@@ -68,7 +72,7 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             <Star
               className={cn(
                 "w-5 h-5 transition-colors",
-                star <= (userRating || localRating)
+                star <= (pendingRating || userRating || toolRating.averageRating)
                   ? "fill-yellow-500 text-yellow-500"
                   : "text-gray-300"
               )}
@@ -119,15 +123,44 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             </Badge>
           ))}
         </div>
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
-            {renderStars()}
-            <span className="text-sm text-gray-400">({localRatingCount})</span>
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {renderStars()}
+              <span className="text-sm text-gray-400">
+                ({toolRating.ratingCount || 0})
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4 text-blue-500" />
+              <span className="text-sm text-gray-400">{toolRating.ratingCount || 0}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4 text-blue-500" />
-            <span className="text-sm text-gray-400">{localPopularity}</span>
-          </div>
+          {showConfirm && pendingRating && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">
+                Confirm {pendingRating}-star rating?
+              </span>
+              <Button
+                size="sm"
+                onClick={handleConfirmRating}
+                className="flex items-center gap-1"
+              >
+                <Check className="w-4 h-4" />
+                Confirm
+              </Button>
+            </div>
+          )}
+          {hasRated(tool.id) && (
+            <span className="text-sm text-gray-400">
+              Your rating: {userRating} stars
+            </span>
+          )}
+          {toolRating.ratingCount > 0 && (
+            <span className="text-sm text-gray-400">
+              Average rating: {toolRating.averageRating.toFixed(1)} stars
+            </span>
+          )}
         </div>
         <div className="mt-4">
           <a
