@@ -4,6 +4,9 @@ import { useBookmark } from '@/hooks/useBookmark';
 import { Bookmark, Star, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
 
 interface ToolCardProps {
   tool: Tool;
@@ -12,6 +15,9 @@ interface ToolCardProps {
 export const ToolCard = ({ tool }: ToolCardProps) => {
   const { isBookmarked, toggleBookmark } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
+  const { isSignedIn } = useUser();
+  const [localRating, setLocalRating] = useState(tool.rating);
+  const [localRatingCount, setLocalRatingCount] = useState(tool.ratingCount);
 
   const getPricingColor = (pricing: Tool['pricing']) => {
     switch (pricing) {
@@ -22,6 +28,40 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
       case 'trial':
         return 'bg-yellow-500/20 text-yellow-500';
     }
+  };
+
+  const handleRating = (rating: number) => {
+    if (!isSignedIn) {
+      toast.error("Please sign in to rate tools");
+      return;
+    }
+
+    setLocalRating(rating);
+    setLocalRatingCount(prev => prev + 1);
+    toast.success("Thank you for rating!");
+  };
+
+  const renderStars = () => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            onClick={() => handleRating(star)}
+            className="focus:outline-none"
+          >
+            <Star
+              className={cn(
+                "w-5 h-5 transition-colors",
+                star <= localRating
+                  ? "fill-yellow-500 text-yellow-500"
+                  : "text-gray-300"
+              )}
+            />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -64,10 +104,10 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             </Badge>
           ))}
         </div>
-        <div className="flex items-center gap-4 mt-4">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm text-gray-400">{tool.rating}</span>
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-4">
+            {renderStars()}
+            <span className="text-sm text-gray-400">({localRatingCount})</span>
           </div>
           <div className="flex items-center gap-1">
             <Users className="w-4 h-4 text-blue-500" />

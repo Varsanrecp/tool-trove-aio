@@ -10,6 +10,8 @@ export interface Tool {
   tags: string[];
   rating: number;
   popularity: number;
+  ratingCount: number;
+  totalRating: number;
 }
 
 export interface Category {
@@ -57,8 +59,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "free",
     tags: ["language", "conversation", "writing"],
-    rating: 4.8,
-    popularity: 1000,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "2",
@@ -70,8 +74,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "paid",
     tags: ["images", "art", "creative"],
-    rating: 4.6,
-    popularity: 850,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "3",
@@ -83,8 +89,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "trial",
     tags: ["productivity", "writing", "organization"],
-    rating: 4.7,
-    popularity: 920,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "4",
@@ -96,8 +104,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "paid",
     tags: ["art", "images", "creative", "illustrations"],
-    rating: 4.7,
-    popularity: 890,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "5",
@@ -109,8 +119,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "paid",
     tags: ["writing", "marketing", "content"],
-    rating: 4.5,
-    popularity: 750,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "6",
@@ -122,8 +134,10 @@ export const tools: Tool[] = [
     featured: false,
     pricing: "free",
     tags: ["research", "analysis", "writing"],
-    rating: 4.6,
-    popularity: 820,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "7",
@@ -135,8 +149,10 @@ export const tools: Tool[] = [
     featured: false,
     pricing: "free",
     tags: ["automation", "productivity", "AI"],
-    rating: 4.2,
-    popularity: 680,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "8",
@@ -148,8 +164,10 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "free",
     tags: ["images", "art", "open-source"],
-    rating: 4.5,
-    popularity: 950,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "9",
@@ -161,8 +179,10 @@ export const tools: Tool[] = [
     featured: false,
     pricing: "trial",
     tags: ["copywriting", "marketing", "content"],
-    rating: 4.3,
-    popularity: 720,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   },
   {
     id: "10",
@@ -174,7 +194,9 @@ export const tools: Tool[] = [
     featured: true,
     pricing: "paid",
     tags: ["coding", "development", "productivity"],
-    rating: 4.8,
-    popularity: 980,
+    rating: 0,
+    popularity: 0,
+    ratingCount: 0,
+    totalRating: 0
   }
 ];
