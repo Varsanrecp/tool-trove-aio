@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { CategoryGrid } from '@/components/CategoryGrid';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { ToolCard } from '@/components/ToolCard';
 import { tools } from '@/lib/tools';
-import { GridIcon, ListIcon, SortAsc, Star, Users } from 'lucide-react';
+import { GridIcon, ListIcon, SortAsc, ThumbsUp, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -19,7 +18,7 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isGridView, setIsGridView] = useState(true);
-  const [sortBy, setSortBy] = useState<"name" | "rating" | "popularity">("rating");
+  const [sortBy, setSortBy] = useState<"name" | "upvotes" | "popularity">("upvotes");
   
   const filteredTools = tools
     .filter((tool) => {
@@ -38,10 +37,12 @@ const Index = () => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
-        case "rating":
-          return b.rating - a.rating;
+        case "upvotes":
+          return b.upvotes - a.upvotes;
         case "popularity":
           return b.popularity - a.popularity;
+        default:
+          return 0;
       }
     });
 
@@ -94,7 +95,7 @@ const Index = () => {
                 </button>
               </div>
               
-              {/* Enhanced Sort Dropdown */}
+              {/* Sort Dropdown */}
               <Select
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value as typeof sortBy)}
@@ -103,9 +104,9 @@ const Index = () => {
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rating" className="flex items-center gap-2">
-                    <Star className="w-4 h-4" />
-                    <span>Highest Rated</span>
+                  <SelectItem value="upvotes" className="flex items-center gap-2">
+                    <ThumbsUp className="w-4 h-4" />
+                    <span>Highest Upvotes</span>
                   </SelectItem>
                   <SelectItem value="popularity" className="flex items-center gap-2">
                     <Users className="w-4 h-4" />

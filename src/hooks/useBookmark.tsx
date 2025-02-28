@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tool } from '@/lib/tools';
 import { toast } from 'sonner';
@@ -9,29 +8,28 @@ interface BookmarkCollection {
   tools: string[];
 }
 
-interface UserRatings {
-  [toolId: string]: number;
+interface UserVotes {
+  [toolId: string]: 'up' | 'down';
 }
 
-interface ToolRatings {
+interface ToolVotes {
   [toolId: string]: {
-    totalRating: number;
-    ratingCount: number;
-    averageRating: number;
+    upvotes: number;
+    downvotes: number;
   };
 }
 
 export const useBookmark = () => {
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
-  const [userRatings, setUserRatings] = useState<UserRatings>({});
-  const [toolRatings, setToolRatings] = useState<ToolRatings>({});
+  const [userVotes, setUserVotes] = useState<UserVotes>({});
+  const [toolVotes, setToolVotes] = useState<ToolVotes>({});
 
   useEffect(() => {
     const stored = localStorage.getItem('bookmarks');
     const storedCollections = localStorage.getItem('bookmark-collections');
-    const storedRatings = localStorage.getItem('user-ratings');
-    const storedToolRatings = localStorage.getItem('tool-ratings');
+    const storedVotes = localStorage.getItem('user-votes');
+    const storedToolVotes = localStorage.getItem('tool-votes');
     
     if (stored) {
       setBookmarks(JSON.parse(stored));
@@ -39,11 +37,11 @@ export const useBookmark = () => {
     if (storedCollections) {
       setCollections(JSON.parse(storedCollections));
     }
-    if (storedRatings) {
-      setUserRatings(JSON.parse(storedRatings));
+    if (storedVotes) {
+      setUserVotes(JSON.parse(storedVotes));
     }
-    if (storedToolRatings) {
-      setToolRatings(JSON.parse(storedToolRatings));
+    if (storedToolVotes) {
+      setToolVotes(JSON.parse(storedToolVotes));
     }
   }, []);
 
@@ -66,40 +64,40 @@ export const useBookmark = () => {
     });
   };
 
-  const hasRated = (toolId: string) => {
-    return userRatings.hasOwnProperty(toolId);
+  const hasVoted = (toolId: string) => {
+    return userVotes.hasOwnProperty(toolId);
   };
 
-  const getUserRating = (toolId: string) => {
-    return userRatings[toolId] || 0;
+  const getUserVote = (toolId: string) => {
+    return userVotes[toolId] || null;
   };
 
-  const getToolRating = (toolId: string) => {
-    return toolRatings[toolId] || { totalRating: 0, ratingCount: 0, averageRating: 0 };
+  const getToolVotes = (toolId: string) => {
+    return toolVotes[toolId] || { upvotes: 0, downvotes: 0 };
   };
 
-  const rateTool = (toolId: string, rating: number) => {
-    if (hasRated(toolId)) {
-      toast.error("You have already rated this tool");
+  const voteTool = (toolId: string, voteType: 'up' | 'down') => {
+    if (hasVoted(toolId)) {
+      toast.error("You have already voted for this tool");
       return false;
     }
 
-    setUserRatings(prev => {
-      const newRatings = { ...prev, [toolId]: rating };
-      localStorage.setItem('user-ratings', JSON.stringify(newRatings));
-      return newRatings;
+    setUserVotes(prev => {
+      const newVotes = { ...prev, [toolId]: voteType };
+      localStorage.setItem('user-votes', JSON.stringify(newVotes));
+      return newVotes;
     });
 
-    setToolRatings(prev => {
-      const currentRating = prev[toolId] || { totalRating: 0, ratingCount: 0, averageRating: 0 };
-      const newRating = {
-        totalRating: currentRating.totalRating + rating,
-        ratingCount: currentRating.ratingCount + 1,
-        averageRating: (currentRating.totalRating + rating) / (currentRating.ratingCount + 1)
+    setToolVotes(prev => {
+      const currentVotes = prev[toolId] || { upvotes: 0, downvotes: 0 };
+      const newVotes = {
+        ...currentVotes,
+        [voteType === 'up' ? 'upvotes' : 'downvotes']: 
+          voteType === 'up' ? currentVotes.upvotes + 1 : currentVotes.downvotes + 1
       };
-      const newToolRatings = { ...prev, [toolId]: newRating };
-      localStorage.setItem('tool-ratings', JSON.stringify(newToolRatings));
-      return newToolRatings;
+      const newToolVotes = { ...prev, [toolId]: newVotes };
+      localStorage.setItem('tool-votes', JSON.stringify(newToolVotes));
+      return newToolVotes;
     });
 
     return true;
@@ -141,9 +139,9 @@ export const useBookmark = () => {
     isBookmarked,
     createCollection,
     addToCollection,
-    rateTool,
-    hasRated,
-    getUserRating,
-    getToolRating
+    voteTool,
+    hasVoted,
+    getUserVote,
+    getToolVotes
   };
 };

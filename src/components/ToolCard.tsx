@@ -1,7 +1,7 @@
 
 import { Tool } from '@/lib/tools';
 import { useBookmark } from '@/hooks/useBookmark';
-import { Bookmark, Star, Users, Check } from 'lucide-react';
+import { Bookmark, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,27 @@ interface ToolCardProps {
 }
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
-  const { isBookmarked, toggleBookmark, rateTool, hasRated, getUserRating, getToolRating } = useBookmark();
+  const { isBookmarked, toggleBookmark, voteTool, hasVoted, getUserVote, getToolVotes } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
   const { isSignedIn } = useUser();
-  const [pendingRating, setPendingRating] = useState<number | null>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const toolRating = getToolRating(tool.id);
-  const userRating = getUserRating(tool.id);
+  const toolVotes = getToolVotes(tool.id);
+  const userVote = getUserVote(tool.id);
+
+  const handleVote = (voteType: 'up' | 'down') => {
+    if (!isSignedIn) {
+      toast.error("Please sign in to vote");
+      return;
+    }
+
+    if (hasVoted(tool.id)) {
+      toast.error("You have already voted for this tool");
+      return;
+    }
+
+    if (voteTool(tool.id, voteType)) {
+      toast.success(`${voteType === 'up' ? 'Upvoted' : 'Downvoted'} successfully!`);
+    }
+  };
 
   const getPricingColor = (pricing: Tool['pricing']) => {
     switch (pricing) {
@@ -31,56 +45,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
       case 'trial':
         return 'bg-yellow-500/20 text-yellow-500';
     }
-  };
-
-  const handleStarClick = (rating: number) => {
-    if (!isSignedIn) {
-      toast.error("Please sign in to rate tools");
-      return;
-    }
-
-    if (hasRated(tool.id)) {
-      toast.error("You have already rated this tool");
-      return;
-    }
-
-    setPendingRating(rating);
-    setShowConfirm(true);
-  };
-
-  const handleConfirmRating = () => {
-    if (pendingRating && rateTool(tool.id, pendingRating)) {
-      toast.success("Thank you for rating!");
-      setShowConfirm(false);
-      setPendingRating(null);
-    }
-  };
-
-  const renderStars = () => {
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            onClick={() => handleStarClick(star)}
-            disabled={hasRated(tool.id)}
-            className={cn(
-              "focus:outline-none",
-              hasRated(tool.id) && "cursor-not-allowed"
-            )}
-          >
-            <Star
-              className={cn(
-                "w-5 h-5 transition-colors",
-                star <= (pendingRating || userRating || toolRating.averageRating)
-                  ? "fill-yellow-500 text-yellow-500"
-                  : "text-gray-300"
-              )}
-            />
-          </button>
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -123,44 +87,39 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             </Badge>
           ))}
         </div>
-        <div className="flex flex-col gap-2 mt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {renderStars()}
-              <span className="text-sm text-gray-400">
-                ({toolRating.ratingCount || 0})
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-sm text-gray-400">{toolRating.ratingCount || 0}</span>
-            </div>
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => handleVote('up')}
+              disabled={hasVoted(tool.id)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full",
+                userVote === 'up' ? "bg-green-500/20" : "hover:bg-gray-700/20",
+                hasVoted(tool.id) && "cursor-not-allowed"
+              )}
+            >
+              <ThumbsUp className={cn(
+                "w-4 h-4",
+                userVote === 'up' ? "text-green-500" : "text-gray-400"
+              )} />
+              <span className="text-sm text-gray-400">{toolVotes.upvotes}</span>
+            </button>
+            <button
+              onClick={() => handleVote('down')}
+              disabled={hasVoted(tool.id)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full",
+                userVote === 'down' ? "bg-red-500/20" : "hover:bg-gray-700/20",
+                hasVoted(tool.id) && "cursor-not-allowed"
+              )}
+            >
+              <ThumbsDown className={cn(
+                "w-4 h-4",
+                userVote === 'down' ? "text-red-500" : "text-gray-400"
+              )} />
+              <span className="text-sm text-gray-400">{toolVotes.downvotes}</span>
+            </button>
           </div>
-          {showConfirm && pendingRating && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">
-                Confirm {pendingRating}-star rating?
-              </span>
-              <Button
-                size="sm"
-                onClick={handleConfirmRating}
-                className="flex items-center gap-1"
-              >
-                <Check className="w-4 h-4" />
-                Confirm
-              </Button>
-            </div>
-          )}
-          {hasRated(tool.id) && (
-            <span className="text-sm text-gray-400">
-              Your rating: {userRating} stars
-            </span>
-          )}
-          {toolRating.ratingCount > 0 && (
-            <span className="text-sm text-gray-400">
-              Average rating: {toolRating.averageRating.toFixed(1)} stars
-            </span>
-          )}
         </div>
         <div className="mt-4">
           <a
