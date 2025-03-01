@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { CategoryGrid } from '@/components/CategoryGrid';
@@ -22,7 +21,7 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isGridView, setIsGridView] = useState(true);
-  const [sortBy, setSortBy] = useState<"name" | "upvotes" | "popularity">("upvotes");
+  const [sortBy, setSortBy] = useState<"sortby" | "name" | "upvotes" | "popularity">("sortby");
   
   const filteredTools = tools
     .filter((tool) => {
@@ -100,30 +99,29 @@ const Index = () => {
               </div>
               
               {/* Sort Dropdown */}
-              <Select
-                value={sortBy}
-                onValueChange={(value) => setSortBy(value as typeof sortBy)}
-              >
+              <Select defaultValue="sortby" value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
                 <SelectTrigger className="w-[180px] glass">
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectLabel className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                    Sort by
-                  </SelectLabel>
-                  <SelectSeparator />
-                  <SelectItem value="upvotes" className="flex items-center gap-2">
-                    <ThumbsUp className="w-4 h-4" />
-                    <span>Highest Upvotes</span>
-                  </SelectItem>
-                  <SelectItem value="popularity" className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>Most Popular</span>
-                  </SelectItem>
-                  <SelectItem value="name" className="flex items-center gap-2">
-                    <SortAsc className="w-4 h-4" />
-                    <span>Alphabetical</span>
-                  </SelectItem>
+                  <SelectGroup>
+                    <SelectItem value="sortby" disabled className="text-muted-foreground">
+                      Sort by...
+                    </SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="upvotes" className="flex items-center gap-2">
+                      <ThumbsUp className="w-4 h-4" />
+                      <span>Highest Upvotes</span>
+                    </SelectItem>
+                    <SelectItem value="popularity" className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      <span>Most Popular</span>
+                    </SelectItem>
+                    <SelectItem value="name" className="flex items-center gap-2">
+                      <SortAsc className="w-4 h-4" />
+                      <span>Alphabetical</span>
+                    </SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
