@@ -1,54 +1,71 @@
 
-import { NavLink } from "react-router-dom";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { Button } from "./ui/button";
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Wrench, Bookmark } from 'lucide-react';
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
+import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
 
 export const Header = () => {
+  const location = useLocation();
+  const { isSignedIn } = useUser();
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center">
-          <NavLink to="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">AI Tools Hub</span>
-          </NavLink>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive ? "text-foreground" : "text-foreground/60"
-              }
-            >
-              Tools
-            </NavLink>
-            <NavLink
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
+      <div className="container flex h-16 items-center justify-between">
+        <nav className="flex items-center space-x-6 text-sm font-medium">
+          <Link
+            to="/"
+            className={cn(
+              "flex items-center space-x-2 transition-colors hover:text-primary",
+              isActive('/') ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <Link
+            to="/tools"
+            className={cn(
+              "flex items-center space-x-2 transition-colors hover:text-primary",
+              isActive('/tools') ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            <Wrench className="h-4 w-4" />
+            <span>Tools</span>
+          </Link>
+          {isSignedIn && (
+            <Link
               to="/saved"
-              className={({ isActive }) =>
-                isActive ? "text-foreground" : "text-foreground/60"
-              }
+              className={cn(
+                "flex items-center space-x-2 transition-colors hover:text-primary",
+                isActive('/saved') ? "text-primary" : "text-muted-foreground"
+              )}
             >
-              Saved
-            </NavLink>
-            <NavLink
-              to="/contact"
-              className={({ isActive }) =>
-                isActive ? "text-foreground" : "text-foreground/60"
-              }
-            >
-              Contact
-            </NavLink>
-          </nav>
-        </div>
+              <Bookmark className="h-4 w-4" />
+              <span>Saved Tools</span>
+            </Link>
+          )}
+        </nav>
+        
         <div className="flex items-center gap-4">
-          <SignedOut>
-            <SignInButton mode="modal">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
+          {!isSignedIn ? (
+            <>
+              <SignInButton mode="modal">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button variant="default" size="sm">
+                  Sign Up
+                </Button>
+              </SignUpButton>
+            </>
+          ) : (
             <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+          )}
         </div>
       </div>
     </header>
