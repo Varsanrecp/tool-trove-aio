@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { CategoryGrid } from '@/components/CategoryGrid';
-import { SearchBar } from '@/components/SearchBar';
+import { CategoryGrid } from '../components/CategoryGrid';
+import { SearchBar } from '../components/SearchBar';
 
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -20,4 +20,3 @@ const Home = () => {
 };
 
 export default Home;
-

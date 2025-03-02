@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { SearchBar } from '@/components/SearchBar';
-import { CategoryFilter } from '@/components/CategoryFilter';
-import { ToolCard } from '@/components/ToolCard';
-import { tools } from '@/lib/tools';
+import { SearchBar } from '../components/SearchBar';
+import { CategoryFilter } from '../components/CategoryFilter';
+import { ToolCard } from '../components/ToolCard';
+import { tools } from '../lib/tools';
 
 const Tools = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -33,4 +33,3 @@ const Tools = () => {
 };
 
 export default Tools;
-
