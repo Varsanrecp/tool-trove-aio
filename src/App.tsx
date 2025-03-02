@@ -1,27 +1,33 @@
 
-import { Toaster } from 'sonner';
-import { Route, Routes } from 'react-router-dom';
-import { Header } from './components/Header';
-import Home from './pages/Home';
-import Tools from './pages/Tools';
-import Contact from './pages/Contact';
-import SavedTools from './pages/SavedTools';
-import SubmitTool from './pages/SubmitTool';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Header } from "@/components/Header";
+import Index from "./pages/Index";
+import SavedTools from "./pages/SavedTools";
+import Contact from "./pages/Contact";
+import NotFound from "./pages/NotFound";
 
-function App() {
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/tools" element={<Tools />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/saved" element={<SavedTools />} />
-        <Route path="/submit" element={<SubmitTool />} />
-      </Routes>
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
       <Toaster />
-    </div>
-  );
-}
+      <Sonner />
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/saved" element={<SavedTools />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
