@@ -5,7 +5,6 @@ import { Bookmark, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 
@@ -14,26 +13,14 @@ interface ToolCardProps {
 }
 
 export const ToolCard = ({ tool }: ToolCardProps) => {
-  const { isBookmarked, toggleBookmark, voteTool, hasVoted, getUserVote, getToolVotes } = useBookmark();
+  const { isBookmarked, toggleBookmark, toggleVote, hasVoted, getUserVote, getToolVotes } = useBookmark();
   const bookmarked = isBookmarked(tool.id);
   const { isSignedIn } = useUser();
   const toolVotes = getToolVotes(tool.id);
   const userVote = getUserVote(tool.id);
 
   const handleVote = (voteType: 'up' | 'down') => {
-    if (!isSignedIn) {
-      toast.error("Please sign in to vote");
-      return;
-    }
-
-    if (hasVoted(tool.id)) {
-      toast.error("You have already voted for this tool");
-      return;
-    }
-
-    if (voteTool(tool.id, voteType)) {
-      toast.success(`${voteType === 'up' ? 'Upvoted' : 'Downvoted'} successfully!`);
-    }
+    toggleVote(tool.id, voteType);
   };
 
   const getPricingColor = (pricing: Tool['pricing']) => {
@@ -91,11 +78,9 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => handleVote('up')}
-              disabled={hasVoted(tool.id)}
               className={cn(
-                "flex items-center gap-1 px-3 py-1 rounded-full",
-                userVote === 'up' ? "bg-green-500/20" : "hover:bg-gray-700/20",
-                hasVoted(tool.id) && "cursor-not-allowed"
+                "flex items-center gap-1 px-3 py-1 rounded-full transition-colors",
+                userVote === 'up' ? "bg-green-500/20" : "hover:bg-gray-700/20"
               )}
             >
               <ThumbsUp className={cn(
@@ -106,11 +91,9 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
             </button>
             <button
               onClick={() => handleVote('down')}
-              disabled={hasVoted(tool.id)}
               className={cn(
-                "flex items-center gap-1 px-3 py-1 rounded-full",
-                userVote === 'down' ? "bg-red-500/20" : "hover:bg-gray-700/20",
-                hasVoted(tool.id) && "cursor-not-allowed"
+                "flex items-center gap-1 px-3 py-1 rounded-full transition-colors",
+                userVote === 'down' ? "bg-red-500/20" : "hover:bg-gray-700/20"
               )}
             >
               <ThumbsDown className={cn(
@@ -120,8 +103,6 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
               <span className="text-sm text-gray-400">{toolVotes.downvotes}</span>
             </button>
           </div>
-        </div>
-        <div className="mt-4">
           <a
             href={tool.url}
             target="_blank"

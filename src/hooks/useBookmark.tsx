@@ -89,25 +89,51 @@ export const useBookmark = () => {
     return toolVotes[toolId] || { upvotes: 0, downvotes: 0 };
   };
 
-  const voteTool = (toolId: string, voteType: 'up' | 'down') => {
-    if (hasVoted(toolId)) {
-      toast.error("You have already voted for this tool");
+  const toggleVote = (toolId: string, newVoteType: 'up' | 'down') => {
+    if (!isSignedIn) {
+      toast.error("Please sign in to vote", {
+        description: "You need to be signed in to vote for tools.",
+        action: {
+          label: "Sign In",
+          onClick: () => document.querySelector<HTMLButtonElement>('[data-clerk-trigger]')?.click(),
+        },
+      });
       return false;
     }
 
     setUserVotes(prev => {
-      const newVotes = { ...prev, [toolId]: voteType };
+      const currentVote = prev[toolId];
+      const newVotes = { ...prev };
+
+      if (currentVote === newVoteType) {
+        delete newVotes[toolId];
+      } else {
+        newVotes[toolId] = newVoteType;
+      }
+
       localStorage.setItem('user-votes', JSON.stringify(newVotes));
       return newVotes;
     });
 
     setToolVotes(prev => {
       const currentVotes = prev[toolId] || { upvotes: 0, downvotes: 0 };
-      const newVotes = {
-        ...currentVotes,
-        [voteType === 'up' ? 'upvotes' : 'downvotes']: 
-          voteType === 'up' ? currentVotes.upvotes + 1 : currentVotes.downvotes + 1
-      };
+      let newVotes = { ...currentVotes };
+
+      if (userVotes[toolId]) {
+        newVotes = {
+          ...newVotes,
+          [userVotes[toolId] === 'up' ? 'upvotes' : 'downvotes']: 
+            Math.max(0, newVotes[userVotes[toolId] === 'up' ? 'upvotes' : 'downvotes'] - 1)
+        };
+      }
+
+      if (userVotes[toolId] !== newVoteType) {
+        newVotes = {
+          ...newVotes,
+          [newVoteType === 'up' ? 'upvotes' : 'downvotes']: newVotes[newVoteType === 'up' ? 'upvotes' : 'downvotes'] + 1
+        };
+      }
+
       const newToolVotes = { ...prev, [toolId]: newVotes };
       localStorage.setItem('tool-votes', JSON.stringify(newToolVotes));
       return newToolVotes;
@@ -152,7 +178,7 @@ export const useBookmark = () => {
     isBookmarked,
     createCollection,
     addToCollection,
-    voteTool,
+    toggleVote,
     hasVoted,
     getUserVote,
     getToolVotes
