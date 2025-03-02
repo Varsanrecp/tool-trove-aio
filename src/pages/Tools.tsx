@@ -16,11 +16,15 @@ const Tools = () => {
           value={searchValue}
           onChange={setSearchValue}
         />
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
-          <CategoryFilter 
-            selectedCategories={selectedCategories}
-            onChange={setSelectedCategories}
-          />
+        <div className="space-y-6">
+          <div className="w-full overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-min">
+              <CategoryFilter 
+                selectedCategories={selectedCategories}
+                onChange={setSelectedCategories}
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tools.map((tool) => (
               <ToolCard key={tool.id} tool={tool} />
