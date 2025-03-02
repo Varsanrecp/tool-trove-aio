@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Wrench, Bookmark, Mail } from 'lucide-react';
+import { Home, Wrench, Bookmark, Mail, Plus } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -36,16 +36,28 @@ export const Header = () => {
             <span>Tools</span>
           </Link>
           {isSignedIn && (
-            <Link
-              to="/saved"
-              className={cn(
-                "flex items-center space-x-2 transition-colors hover:text-primary",
-                isActive('/saved') ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <Bookmark className="h-4 w-4" />
-              <span>Saved Tools</span>
-            </Link>
+            <>
+              <Link
+                to="/saved"
+                className={cn(
+                  "flex items-center space-x-2 transition-colors hover:text-primary",
+                  isActive('/saved') ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Bookmark className="h-4 w-4" />
+                <span>Saved Tools</span>
+              </Link>
+              <Link
+                to="/submit"
+                className={cn(
+                  "flex items-center space-x-2 transition-colors hover:text-primary",
+                  isActive('/submit') ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Submit Tool</span>
+              </Link>
+            </>
           )}
           <Link
             to="/contact"
