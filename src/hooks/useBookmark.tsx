@@ -33,19 +33,25 @@ export const useBookmark = () => {
     const storedVotes = localStorage.getItem('user-votes');
     const storedToolVotes = localStorage.getItem('tool-votes');
     
-    if (stored) {
+    if (stored && isSignedIn) {
       setBookmarks(JSON.parse(stored));
+    } else {
+      setBookmarks([]);
     }
-    if (storedCollections) {
+    if (storedCollections && isSignedIn) {
       setCollections(JSON.parse(storedCollections));
+    } else {
+      setCollections([]);
     }
-    if (storedVotes) {
+    if (storedVotes && isSignedIn) {
       setUserVotes(JSON.parse(storedVotes));
+    } else {
+      setUserVotes({});
     }
     if (storedToolVotes) {
       setToolVotes(JSON.parse(storedToolVotes));
     }
-  }, []);
+  }, [isSignedIn]);
 
   const toggleBookmark = (tool: Tool) => {
     if (!isSignedIn) {
@@ -78,10 +84,12 @@ export const useBookmark = () => {
   };
 
   const hasVoted = (toolId: string) => {
+    if (!isSignedIn) return false;
     return userVotes.hasOwnProperty(toolId);
   };
 
   const getUserVote = (toolId: string) => {
+    if (!isSignedIn) return null;
     return userVotes[toolId] || null;
   };
 
