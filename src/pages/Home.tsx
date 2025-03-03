@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CategoryGrid } from '../components/CategoryGrid';
@@ -6,10 +7,24 @@ import { tools } from '../lib/tools';
 import { ToolCard } from '../components/ToolCard';
 import { Button } from '../components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
+
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
   const navigate = useNavigate();
+  const { isSignedIn } = useUser();
   const popularTools = tools.filter(tool => tool.featured).slice(0, 3);
+
+  const handleUpgradeClick = () => {
+    if (!isSignedIn) {
+      toast.error('Please sign in to upgrade to premium');
+      return;
+    }
+    // Handle upgrade logic here
+    toast.success('Upgrade functionality coming soon!');
+  };
+
   return <main className="container py-6">
       <div className="space-y-16">
         {/* Recommendations Section (Empty for now) */}
@@ -97,7 +112,7 @@ to pay for premium</div>
                     <span>Early access to new features</span>
                   </li>
                 </ul>
-                <Button className="w-full">
+                <Button className="w-full" onClick={handleUpgradeClick}>
                   Upgrade Now
                 </Button>
               </div>
@@ -107,4 +122,5 @@ to pay for premium</div>
       </div>
     </main>;
 };
+
 export default Home;

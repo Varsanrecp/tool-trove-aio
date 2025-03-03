@@ -13,10 +13,10 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-      <div className="container flex flex-col items-center h-auto py-4 space-y-4">
+      <div className="container flex h-auto py-4">
         <h1 className="text-2xl font-bold text-primary">AI TOOL COLLECTOR</h1>
         
-        <nav className="flex items-center justify-center space-x-6 text-sm font-medium">
+        <nav className="flex items-center justify-center flex-1 space-x-6 text-sm font-medium">
           <Link
             to="/"
             className={cn(
