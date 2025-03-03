@@ -11,6 +11,12 @@ export const Header = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const handleHomeClick = () => {
+    if (location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
       <div className="container flex h-auto py-4">
@@ -19,6 +25,7 @@ export const Header = () => {
         <nav className="flex items-center justify-center flex-1 space-x-6 text-sm font-medium">
           <Link
             to="/"
+            onClick={handleHomeClick}
             className={cn(
               "flex items-center space-x-2 transition-colors hover:text-primary",
               isActive('/') ? "text-primary" : "text-muted-foreground"
