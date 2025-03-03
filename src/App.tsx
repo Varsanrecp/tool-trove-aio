@@ -7,6 +7,7 @@ import Tools from './pages/Tools';
 import Contact from './pages/Contact';
 import SavedTools from './pages/SavedTools';
 import SubmitTool from './pages/SubmitTool';
+import PricingPage from './pages/Pricing';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/saved" element={<SavedTools />} />
         <Route path="/submit" element={<SubmitTool />} />
+        <Route path="/pricing" element={<PricingPage />} />
       </Routes>
       <Toaster />
     </div>

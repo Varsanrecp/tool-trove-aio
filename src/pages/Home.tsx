@@ -40,11 +40,7 @@ const Home = () => {
   }, []);
 
   const handleUpgradeClick = () => {
-    if (!isSignedIn) {
-      toast.error('Please sign in to upgrade to premium');
-      return;
-    }
-    toast.success('Upgrade functionality coming soon!');
+    navigate('/pricing');
   };
 
   return <main className="container py-6">
