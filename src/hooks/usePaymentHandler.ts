@@ -12,10 +12,11 @@ export const usePaymentHandler = () => {
   const navigate = useNavigate();
 
   const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Razorpay script'));
       document.body.appendChild(script);
     });
   };
@@ -57,17 +58,24 @@ export const usePaymentHandler = () => {
     }
 
     try {
+      console.log('Loading Razorpay script...');
       await loadRazorpayScript();
+      console.log('Razorpay script loaded successfully');
 
+      console.log('Creating order...');
       const orderResponse = await supabase.functions.invoke('create-order', {
         body: { amount: 50, currency: 'INR' }
       });
 
-      if (orderResponse.error) throw orderResponse.error;
+      if (!orderResponse.data || orderResponse.error) {
+        console.error('Order creation failed:', orderResponse.error || 'No order data received');
+        throw new Error(orderResponse.error?.message || 'Failed to create payment order');
+      }
 
+      console.log('Order created successfully:', orderResponse.data);
       const order = orderResponse.data;
 
-      const razorpay = new window.Razorpay({
+      const options = {
         key: RAZORPAY_KEY_ID,
         order_id: order.id,
         amount: order.amount,
@@ -75,6 +83,7 @@ export const usePaymentHandler = () => {
         name: 'AI Tool Collector',
         description: 'Premium Plan Subscription',
         handler: async (response: any) => {
+          console.log('Payment successful:', response);
           try {
             const subscriptionData = {
               user_id: user?.id || '',
@@ -90,13 +99,16 @@ export const usePaymentHandler = () => {
               .from('subscriptions')
               .insert([subscriptionData]);
 
-            if (error) throw error;
+            if (error) {
+              console.error('Error saving subscription:', error);
+              throw error;
+            }
 
             toast.success("Payment successful! Welcome to Premium");
             navigate('/tools');
           } catch (error) {
             console.error('Error saving subscription:', error);
-            toast.error("Failed to save subscription");
+            toast.error("Failed to save subscription. Please contact support.");
           }
         },
         prefill: {
@@ -105,13 +117,21 @@ export const usePaymentHandler = () => {
         },
         theme: {
           color: '#6366f1'
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment modal closed');
+            toast.error("Payment cancelled");
+          }
         }
-      });
+      };
 
+      console.log('Initializing Razorpay payment...');
+      const razorpay = new (window as any).Razorpay(options);
       razorpay.open();
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error("Failed to initialize payment");
+      console.error('Payment initialization error:', error);
+      toast.error(error.message || "Failed to initialize payment");
     }
   }, [isSignedIn, user, navigate]);
 
