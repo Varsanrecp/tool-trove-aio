@@ -1,4 +1,3 @@
-
 import { useUser } from "@clerk/clerk-react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,8 @@ declare global {
     Razorpay: any;
   }
 }
+
+const RAZORPAY_KEY_ID = "rzp_live_eG4P5xNRvPwZuI";
 
 const PricingPage = () => {
   const { isSignedIn, user } = useUser();
@@ -33,13 +34,19 @@ const PricingPage = () => {
     }
 
     try {
-      const { error } = await supabase.from('subscriptions').insert({
-        user_id: user?.id,
+      const subscriptionData = {
+        user_id: user?.id || '',
         plan_type: 'free',
         status: 'active',
         amount: 0,
-        currency: 'INR'
-      });
+        currency: 'INR',
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert([subscriptionData]);
 
       if (error) throw error;
       toast.success("Successfully signed up for free plan");
@@ -71,7 +78,7 @@ const PricingPage = () => {
 
       // Initialize Razorpay payment
       const razorpay = new window.Razorpay({
-        key: 'YOUR_RAZORPAY_KEY_ID', // Replace with your actual key ID
+        key: RAZORPAY_KEY_ID,
         order_id: order.id,
         amount: order.amount,
         currency: order.currency,
@@ -79,16 +86,19 @@ const PricingPage = () => {
         description: 'Premium Plan Subscription',
         handler: async (response: any) => {
           try {
-            // Create subscription record
-            const { error } = await supabase.from('subscriptions').insert({
-              user_id: user?.id,
+            const subscriptionData = {
+              user_id: user?.id || '',
               plan_type: 'premium',
               status: 'active',
               amount: 50,
               currency: 'INR',
-              start_date: new Date(),
-              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-            });
+              start_date: new Date().toISOString(),
+              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            };
+
+            const { error } = await supabase
+              .from('subscriptions')
+              .insert([subscriptionData]);
 
             if (error) throw error;
 
