@@ -63,7 +63,7 @@ export const usePaymentHandler = () => {
 
       console.log('Creating order...');
       const orderResponse = await supabase.functions.invoke('create-order', {
-        body: { amount: 50, currency: 'INR' }
+        body: { amount: 10, currency: 'INR' }
       });
 
       if (!orderResponse.data || orderResponse.error) {

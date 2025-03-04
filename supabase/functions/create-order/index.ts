@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { amount, currency = 'INR' } = await req.json()
+    const { amount = 10, currency = 'INR' } = await req.json()
     
     if (!amount || amount <= 0) {
       throw new Error('Invalid amount specified')
