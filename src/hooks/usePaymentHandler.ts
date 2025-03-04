@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
@@ -89,7 +88,7 @@ export const usePaymentHandler = () => {
               user_id: user?.id || '',
               plan_type: 'premium',
               status: 'active',
-              amount: 50,
+              amount: 10,
               currency: 'INR',
               start_date: new Date().toISOString(),
               end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
