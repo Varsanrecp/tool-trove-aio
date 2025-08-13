@@ -28,7 +28,7 @@ const Home = () => {
       .then(data => {
         setUserCountry(data.country);
         if (data.country === 'IN') {
-          setPriceAmount('₹50');
+          setPriceAmount('₹10');
         } else {
           setPriceAmount('$2');
         }
@@ -76,7 +76,7 @@ to pay for premium</div>
             <div className="p-6 rounded-lg border bg-card hover:border-primary transition-colors">
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Free Plan</h3>
-                <p className="text-3xl font-bold">$0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                <p className="text-3xl font-bold">₹0<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-primary" />
