@@ -1,12 +1,41 @@
-
 import { ToolCard } from '@/components/ToolCard';
 import { useBookmark } from '@/hooks/useBookmark';
-import { tools } from '@/lib/tools';
+import { supabase } from '@/integrations/supabase/client';
+import { Tool } from '@/lib/tools';
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { useEffect, useState } from 'react';
 
 const SavedTools = () => {
   const { bookmarks } = useBookmark();
-  const savedTools = tools.filter(tool => bookmarks.includes(tool.id));
+  const [allTools, setAllTools] = useState<Tool[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchTools = async () => {
+      const { data, error } = await supabase
+        .from('tools')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching tools:', error);
+      } else {
+        setAllTools(data as Tool[]);
+      }
+      setLoading(false);
+    };
+
+    fetchTools();
+  }, []);
+
+  const savedTools = allTools.filter(tool => bookmarks.includes(tool.id));
+
+  if (loading) {
+    return (
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background text-foreground">
+            <div className="text-center">Loading...</div>
+        </div>
+    );
+  }
 
   return (
     <SignedIn>

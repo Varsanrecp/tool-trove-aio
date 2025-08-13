@@ -2,25 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { SearchBar } from '../components/SearchBar';
-import { tools } from '../lib/tools';
+import { Tool } from '../lib/tools';
 import { ToolCard } from '../components/ToolCard';
 import { Button } from '../components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
+  const [tools, setTools] = useState<Tool[]>([]);
   const [userCountry, setUserCountry] = useState('');
   const [priceAmount, setPriceAmount] = useState('$7');
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
-  const popularTools = tools.filter(tool => tool.featured).slice(0, 3);
 
+  const featuredTools = tools.filter(tool => tool.featured).slice(0, 3);
+  
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      const { data, error } = await supabase
+        .from('tools')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching tools:', error);
+      } else {
+        setTools(data as Tool[]);
+      }
+    };
+
+    fetchTools();
+  }, []);
 
   useEffect(() => {
     fetch('https://ipapi.co/json/')
@@ -66,7 +85,7 @@ to pay for premium</div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {popularTools.map(tool => <ToolCard key={tool.id} tool={tool} />)}
+            {featuredTools.map(tool => <ToolCard key={tool.id} tool={tool} />)}
           </div>
         </div>
 

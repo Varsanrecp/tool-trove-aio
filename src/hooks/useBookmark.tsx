@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tool } from '@/lib/tools';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
@@ -28,32 +28,40 @@ export const useBookmark = () => {
   const { isSignedIn } = useUser();
 
   useEffect(() => {
-    const stored = localStorage.getItem('bookmarks');
-    const storedCollections = localStorage.getItem('bookmark-collections');
-    const storedVotes = localStorage.getItem('user-votes');
-    const storedToolVotes = localStorage.getItem('tool-votes');
-    
-    if (stored && isSignedIn) {
-      setBookmarks(JSON.parse(stored));
+    if (isSignedIn) {
+      const storedBookmarks = localStorage.getItem('bookmarks');
+      if (storedBookmarks) {
+        setBookmarks(JSON.parse(storedBookmarks));
+      } else {
+        setBookmarks([]);
+      }
+
+      const storedCollections = localStorage.getItem('bookmark-collections');
+      if (storedCollections) {
+        setCollections(JSON.parse(storedCollections));
+      } else {
+        setCollections([]);
+      }
+
+      const storedVotes = localStorage.getItem('user-votes');
+      if (storedVotes) {
+        setUserVotes(JSON.parse(storedVotes));
+      } else {
+        setUserVotes({});
+      }
     } else {
       setBookmarks([]);
-    }
-    if (storedCollections && isSignedIn) {
-      setCollections(JSON.parse(storedCollections));
-    } else {
       setCollections([]);
-    }
-    if (storedVotes && isSignedIn) {
-      setUserVotes(JSON.parse(storedVotes));
-    } else {
       setUserVotes({});
     }
+
+    const storedToolVotes = localStorage.getItem('tool-votes');
     if (storedToolVotes) {
       setToolVotes(JSON.parse(storedToolVotes));
     }
   }, [isSignedIn]);
 
-  const toggleBookmark = (tool: Tool) => {
+  const toggleBookmark = useCallback((tool: Tool) => {
     if (!isSignedIn) {
       toast.error("Please sign in to save tools", {
         description: "You need to be signed in to save tools to your collection.",
@@ -65,15 +73,16 @@ export const useBookmark = () => {
       return;
     }
 
-    setBookmarks((prev) => {
-      const newBookmarks = prev.includes(tool.id)
-        ? prev.filter((id) => id !== tool.id)
-        : [...prev, tool.id];
-      
+    setBookmarks(prevBookmarks => {
+      const isBookmarked = prevBookmarks.includes(tool.id);
+      const newBookmarks = isBookmarked
+        ? prevBookmarks.filter(id => id !== tool.id)
+        : [...prevBookmarks, tool.id];
+
       localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
-      
+
       toast(
-        prev.includes(tool.id) ? "Removed from bookmarks" : "Added to bookmarks",
+        isBookmarked ? "Removed from bookmarks" : "Added to bookmarks",
         {
           description: tool.name,
         }
@@ -81,7 +90,9 @@ export const useBookmark = () => {
       
       return newBookmarks;
     });
-  };
+  }, [isSignedIn]);
+
+  const isBookmarked = (id: string) => bookmarks.includes(id);
 
   const hasVoted = (toolId: string) => {
     if (!isSignedIn) return false;
@@ -97,7 +108,7 @@ export const useBookmark = () => {
     return toolVotes[toolId] || { upvotes: 0, downvotes: 0 };
   };
 
-  const toggleVote = (toolId: string, newVoteType: 'up' | 'down') => {
+  const toggleVote = useCallback((toolId: string, newVoteType: 'up' | 'down') => {
     if (!isSignedIn) {
       toast.error("Please sign in to vote", {
         description: "You need to be signed in to vote for tools.",
@@ -109,46 +120,38 @@ export const useBookmark = () => {
       return false;
     }
 
-    setUserVotes(prev => {
-      const currentVote = prev[toolId];
-      const newVotes = { ...prev };
+    setUserVotes(prevUserVotes => {
+      setToolVotes(prevToolVotes => {
+        const currentVote = prevUserVotes[toolId];
+        const newUpvotes = (prevToolVotes[toolId]?.upvotes || 0) + (newVoteType === 'up' && currentVote !== newVoteType ? 1 : 0) - (currentVote === 'up' ? 1 : 0);
+        const newDownvotes = (prevToolVotes[toolId]?.downvotes || 0) + (newVoteType === 'down' && currentVote !== newVoteType ? 1 : 0) - (currentVote === 'down' ? 1 : 0);
+        
+        const newToolVotes = {
+          ...prevToolVotes,
+          [toolId]: {
+            upvotes: Math.max(0, newUpvotes),
+            downvotes: Math.max(0, newDownvotes),
+          },
+        };
+        localStorage.setItem('tool-votes', JSON.stringify(newToolVotes));
+        
+        return newToolVotes;
+      });
 
+      const currentVote = prevUserVotes[toolId];
+      const newUserVotes = { ...prevUserVotes };
       if (currentVote === newVoteType) {
-        delete newVotes[toolId];
+        delete newUserVotes[toolId];
       } else {
-        newVotes[toolId] = newVoteType;
+        newUserVotes[toolId] = newVoteType;
       }
-
-      localStorage.setItem('user-votes', JSON.stringify(newVotes));
-      return newVotes;
-    });
-
-    setToolVotes(prev => {
-      const currentVotes = prev[toolId] || { upvotes: 0, downvotes: 0 };
-      let newVotes = { ...currentVotes };
-
-      if (userVotes[toolId]) {
-        newVotes = {
-          ...newVotes,
-          [userVotes[toolId] === 'up' ? 'upvotes' : 'downvotes']: 
-            Math.max(0, newVotes[userVotes[toolId] === 'up' ? 'upvotes' : 'downvotes'] - 1)
-        };
-      }
-
-      if (userVotes[toolId] !== newVoteType) {
-        newVotes = {
-          ...newVotes,
-          [newVoteType === 'up' ? 'upvotes' : 'downvotes']: newVotes[newVoteType === 'up' ? 'upvotes' : 'downvotes'] + 1
-        };
-      }
-
-      const newToolVotes = { ...prev, [toolId]: newVotes };
-      localStorage.setItem('tool-votes', JSON.stringify(newToolVotes));
-      return newToolVotes;
+      localStorage.setItem('user-votes', JSON.stringify(newUserVotes));
+      
+      return newUserVotes;
     });
 
     return true;
-  };
+  }, [isSignedIn]);
 
   const createCollection = (name: string) => {
     setCollections((prev) => {
@@ -176,9 +179,7 @@ export const useBookmark = () => {
       return newCollections;
     });
   };
-
-  const isBookmarked = (id: string) => bookmarks.includes(id);
-
+  
   return {
     bookmarks,
     collections,
