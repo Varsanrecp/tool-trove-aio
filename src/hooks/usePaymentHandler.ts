@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,7 +9,7 @@ const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 export const usePaymentHandler = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user, getToken } = useAuth();
   const userDetails = user?.primaryEmailAddress?.emailAddress;
 
   const loadRazorpayScript = () => {
@@ -29,8 +29,11 @@ export const usePaymentHandler = () => {
     }
 
     try {
+      const token = await getToken();
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (!user) throw new Error("User not found");
       const subscriptionData = {
-        user_id: user?.id,
+        user_id: user.id,
         plan_type: 'free',
         status: 'active',
         amount: 0,
@@ -41,7 +44,7 @@ export const usePaymentHandler = () => {
 
       const { error } = await supabase
         .from('subscriptions')
-        .insert([subscriptionData]);
+        .insert([subscriptionData], { headers: { Authorization: `Bearer ${token}` } });
 
       if (error) throw error;
       toast.success("Successfully signed up for free plan");
@@ -57,26 +60,25 @@ export const usePaymentHandler = () => {
       toast.error("Please sign in to continue with premium plan");
       return;
     }
-    
+
     let razorpay: any;
-    
+
     try {
       setIsProcessing(true);
-      console.log('Loading Razorpay script...');
       await loadRazorpayScript();
-      console.log('Razorpay script loaded successfully');
 
-      console.log('Creating order...');
+      // Get Clerk session token
+      const token = await getToken();
+
       const orderResponse = await supabase.functions.invoke('create-order', {
-        body: { amount: 10, currency: 'INR' }
+        body: { amount: 10, currency: 'INR' },
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!orderResponse.data || orderResponse.error) {
-        console.error('Order creation failed:', orderResponse.error || 'No order data received');
         throw new Error(orderResponse.error?.message || 'Failed to create payment order');
       }
 
-      console.log('Order created successfully:', orderResponse.data);
       const order = orderResponse.data;
 
       const options = {
@@ -87,10 +89,12 @@ export const usePaymentHandler = () => {
         name: 'AI Tool Collector',
         description: 'Premium Plan Subscription',
         handler: async (response: any) => {
-          console.log('Payment successful:', response);
           try {
+            const { data: { user } } = await supabase.auth.getUser(token);
+            if (!user) throw new Error("User not found");
+
             const subscriptionData = {
-              user_id: user?.id,
+              user_id: user.id,
               plan_type: 'premium',
               status: 'active',
               amount: 10,
@@ -98,15 +102,9 @@ export const usePaymentHandler = () => {
               start_date: new Date().toISOString(),
               end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
             };
-
-            const { error } = await supabase
+            await supabase
               .from('subscriptions')
-              .insert([subscriptionData]);
-
-            if (error) {
-              console.error('Error saving subscription:', error);
-              throw error;
-            }
+              .insert([subscriptionData], { headers: { Authorization: `Bearer ${token}` } });
 
             toast.success("Payment successful! Welcome to Premium");
             navigate('/tools');
@@ -124,22 +122,19 @@ export const usePaymentHandler = () => {
         },
         modal: {
           ondismiss: function() {
-            console.log('Payment modal closed');
             toast.error("Payment cancelled");
           }
         }
       };
 
-      console.log('Initializing Razorpay payment...');
       razorpay = new (window as any).Razorpay(options);
-      razorpay.open(); // Corrected variable name from rzp to razorpay
+      razorpay.open();
     } catch (error) {
-      console.error('Payment initialization error:', error);
       toast.error(error.message || "Failed to initialize payment");
     } finally {
       setIsProcessing(false);
     }
-  }, [isSignedIn, user, navigate]);
+  }, [isSignedIn, user, navigate, getToken, userDetails]);
 
   return {
     handleFreeSignup,
