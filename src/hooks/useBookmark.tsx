@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Tool } from '@/lib/tools';
 import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
@@ -21,34 +21,26 @@ interface ToolVotes {
 }
 
 export const useBookmark = () => {
+  const { isSignedIn } = useUser();
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
   const [userVotes, setUserVotes] = useState<UserVotes>({});
   const [toolVotes, setToolVotes] = useState<ToolVotes>({});
-  const { isSignedIn } = useUser();
 
+  // Effect to load state from localStorage on mount or when sign-in status changes
   useEffect(() => {
     if (isSignedIn) {
       const storedBookmarks = localStorage.getItem('bookmarks');
-      if (storedBookmarks) {
-        setBookmarks(JSON.parse(storedBookmarks));
-      } else {
-        setBookmarks([]);
-      }
-
+      if (storedBookmarks) setBookmarks(JSON.parse(storedBookmarks));
+      else setBookmarks([]);
+      
       const storedCollections = localStorage.getItem('bookmark-collections');
-      if (storedCollections) {
-        setCollections(JSON.parse(storedCollections));
-      } else {
-        setCollections([]);
-      }
-
+      if (storedCollections) setCollections(JSON.parse(storedCollections));
+      else setCollections([]);
+      
       const storedVotes = localStorage.getItem('user-votes');
-      if (storedVotes) {
-        setUserVotes(JSON.parse(storedVotes));
-      } else {
-        setUserVotes({});
-      }
+      if (storedVotes) setUserVotes(JSON.parse(storedVotes));
+      else setUserVotes({});
     } else {
       setBookmarks([]);
       setCollections([]);
@@ -56,12 +48,11 @@ export const useBookmark = () => {
     }
 
     const storedToolVotes = localStorage.getItem('tool-votes');
-    if (storedToolVotes) {
-      setToolVotes(JSON.parse(storedToolVotes));
-    }
+    if (storedToolVotes) setToolVotes(JSON.parse(storedToolVotes));
   }, [isSignedIn]);
 
-  const toggleBookmark = useCallback((tool: Tool) => {
+  // Function to toggle bookmark status, ensuring state and localStorage are in sync
+  const toggleBookmark = (tool: Tool) => {
     if (!isSignedIn) {
       toast.error("Please sign in to save tools", {
         description: "You need to be signed in to save tools to your collection.",
@@ -78,9 +69,9 @@ export const useBookmark = () => {
       const newBookmarks = isBookmarked
         ? prevBookmarks.filter(id => id !== tool.id)
         : [...prevBookmarks, tool.id];
-
+      
       localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
-
+      
       toast(
         isBookmarked ? "Removed from bookmarks" : "Added to bookmarks",
         {
@@ -90,7 +81,7 @@ export const useBookmark = () => {
       
       return newBookmarks;
     });
-  }, [isSignedIn]);
+  };
 
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
@@ -108,7 +99,7 @@ export const useBookmark = () => {
     return toolVotes[toolId] || { upvotes: 0, downvotes: 0 };
   };
 
-  const toggleVote = useCallback((toolId: string, newVoteType: 'up' | 'down') => {
+  const toggleVote = (toolId: string, newVoteType: 'up' | 'down') => {
     if (!isSignedIn) {
       toast.error("Please sign in to vote", {
         description: "You need to be signed in to vote for tools.",
@@ -123,19 +114,26 @@ export const useBookmark = () => {
     setUserVotes(prevUserVotes => {
       setToolVotes(prevToolVotes => {
         const currentVote = prevUserVotes[toolId];
-        const newUpvotes = (prevToolVotes[toolId]?.upvotes || 0) + (newVoteType === 'up' && currentVote !== newVoteType ? 1 : 0) - (currentVote === 'up' ? 1 : 0);
-        const newDownvotes = (prevToolVotes[toolId]?.downvotes || 0) + (newVoteType === 'down' && currentVote !== newVoteType ? 1 : 0) - (currentVote === 'down' ? 1 : 0);
+        const currentToolVotes = prevToolVotes[toolId] || { upvotes: 0, downvotes: 0 };
+        const newVotes = { ...currentToolVotes };
+
+        if (currentVote === 'up') {
+          newVotes.upvotes = Math.max(0, newVotes.upvotes - 1);
+        } else if (currentVote === 'down') {
+          newVotes.downvotes = Math.max(0, newVotes.downvotes - 1);
+        }
+
+        if (currentVote !== newVoteType) {
+          if (newVoteType === 'up') {
+            newVotes.upvotes++;
+          } else {
+            newVotes.downvotes++;
+          }
+        }
         
-        const newToolVotes = {
-          ...prevToolVotes,
-          [toolId]: {
-            upvotes: Math.max(0, newUpvotes),
-            downvotes: Math.max(0, newDownvotes),
-          },
-        };
-        localStorage.setItem('tool-votes', JSON.stringify(newToolVotes));
-        
-        return newToolVotes;
+        const updatedToolVotes = { ...prevToolVotes, [toolId]: newVotes };
+        localStorage.setItem('tool-votes', JSON.stringify(updatedToolVotes));
+        return updatedToolVotes;
       });
 
       const currentVote = prevUserVotes[toolId];
@@ -146,12 +144,12 @@ export const useBookmark = () => {
         newUserVotes[toolId] = newVoteType;
       }
       localStorage.setItem('user-votes', JSON.stringify(newUserVotes));
-      
+
       return newUserVotes;
     });
 
     return true;
-  }, [isSignedIn]);
+  };
 
   const createCollection = (name: string) => {
     setCollections((prev) => {
@@ -190,6 +188,6 @@ export const useBookmark = () => {
     toggleVote,
     hasVoted,
     getUserVote,
-    getToolVotes
+    getToolVotes,
   };
 };

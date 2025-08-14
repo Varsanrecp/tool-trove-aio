@@ -1,4 +1,3 @@
-
 import { Tool } from '@/lib/tools';
 import { useBookmark } from '@/hooks/useBookmark';
 import { Bookmark, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -10,12 +9,12 @@ import { toast } from 'sonner';
 
 interface ToolCardProps {
   tool: Tool;
+  isBookmarked: boolean;
+  toggleBookmark: () => void;
 }
 
-export const ToolCard = ({ tool }: ToolCardProps) => {
-  const { isBookmarked, toggleBookmark, toggleVote, hasVoted, getUserVote, getToolVotes } = useBookmark();
-  const bookmarked = isBookmarked(tool.id);
-  const { isSignedIn } = useUser();
+export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) => {
+  const { toggleVote, hasVoted, getUserVote, getToolVotes } = useBookmark();
   const toolVotes = getToolVotes(tool.id);
   const userVote = getUserVote(tool.id);
 
@@ -44,13 +43,13 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
           loading="lazy"
         />
         <button
-          onClick={() => toggleBookmark(tool)}
+          onClick={toggleBookmark}
           className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
         >
           <Bookmark
             className={cn(
               "w-5 h-5 transition-colors",
-              bookmarked ? "fill-primary text-primary" : "text-white"
+              isBookmarked ? "fill-primary text-primary" : "text-white"
             )}
           />
         </button>

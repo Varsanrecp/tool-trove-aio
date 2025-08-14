@@ -9,6 +9,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useBookmark } from '@/hooks/useBookmark';
 
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -18,6 +19,7 @@ const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
+  const { isBookmarked, toggleBookmark } = useBookmark();
 
   const featuredTools = tools.filter(tool => tool.featured).slice(0, 3);
   
@@ -85,7 +87,14 @@ to pay for premium</div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredTools.map(tool => <ToolCard key={tool.id} tool={tool} />)}
+            {featuredTools.map(tool => (
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                isBookmarked={isBookmarked(tool.id)}
+                toggleBookmark={() => toggleBookmark(tool)}
+              />
+            ))}
           </div>
         </div>
 

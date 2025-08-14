@@ -3,21 +3,23 @@ import { useBookmark } from '@/hooks/useBookmark';
 import { supabase } from '@/integrations/supabase/client';
 import { Tool } from '@/lib/tools';
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const SavedTools = () => {
-  const { bookmarks } = useBookmark();
+  const { bookmarks, isBookmarked, toggleBookmark } = useBookmark();
   const [allTools, setAllTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchTools = async () => {
+      setLoading(true);
       const { data, error } = await supabase
         .from('tools')
         .select('*');
 
       if (error) {
         console.error('Error fetching tools:', error);
+        setAllTools([]);
       } else {
         setAllTools(data as Tool[]);
       }
@@ -27,7 +29,7 @@ const SavedTools = () => {
     fetchTools();
   }, []);
 
-  const savedTools = allTools.filter(tool => bookmarks.includes(tool.id));
+  const savedTools = allTools.filter(tool => isBookmarked(tool.id));
 
   if (loading) {
     return (
@@ -60,7 +62,12 @@ const SavedTools = () => {
             <h1 className="text-3xl font-bold">Saved Tools</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {savedTools.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
+                  isBookmarked={isBookmarked(tool.id)}
+                  toggleBookmark={() => toggleBookmark(tool)}
+                />
               ))}
             </div>
           </div>

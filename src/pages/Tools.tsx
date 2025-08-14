@@ -4,12 +4,14 @@ import { CategoryFilter } from '../components/CategoryFilter';
 import { ToolCard } from '../components/ToolCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Tool } from '../lib/tools';
+import { useBookmark } from '@/hooks/useBookmark'; // Add this import
 
 const Tools = () => {
   const [searchValue, setSearchValue] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isBookmarked, toggleBookmark } = useBookmark(); // Add this line
 
   useEffect(() => {
     const fetchTools = async () => {
@@ -68,7 +70,12 @@ const Tools = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} />
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                isBookmarked={isBookmarked(tool.id)}
+                toggleBookmark={() => toggleBookmark(tool)}
+              />
             ))}
           </div>
         </div>
