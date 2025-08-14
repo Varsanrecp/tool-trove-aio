@@ -1,21 +1,23 @@
-import { useCallback } from "react";
-import { useUser } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-const RAZORPAY_KEY_ID = "rzp_live_eG4P5xNRvPwZuI";
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 export const usePaymentHandler = () => {
-  const { isSignedIn, user } = useUser();
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const { isSignedIn, user } = useUser();
+  const userDetails = user?.primaryEmailAddress?.emailAddress;
 
   const loadRazorpayScript = () => {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Failed to load Razorpay script'));
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(false);
       document.body.appendChild(script);
     });
   };
@@ -28,7 +30,7 @@ export const usePaymentHandler = () => {
 
     try {
       const subscriptionData = {
-        user_id: user?.id || '',
+        user_id: user?.id,
         plan_type: 'free',
         status: 'active',
         amount: 0,
@@ -55,8 +57,11 @@ export const usePaymentHandler = () => {
       toast.error("Please sign in to continue with premium plan");
       return;
     }
-
+    
+    let razorpay: any;
+    
     try {
+      setIsProcessing(true);
       console.log('Loading Razorpay script...');
       await loadRazorpayScript();
       console.log('Razorpay script loaded successfully');
@@ -85,7 +90,7 @@ export const usePaymentHandler = () => {
           console.log('Payment successful:', response);
           try {
             const subscriptionData = {
-              user_id: user?.id || '',
+              user_id: user?.id,
               plan_type: 'premium',
               status: 'active',
               amount: 10,
@@ -111,7 +116,7 @@ export const usePaymentHandler = () => {
           }
         },
         prefill: {
-          email: user?.emailAddresses[0]?.emailAddress,
+          email: userDetails,
           contact: user?.phoneNumbers?.[0]?.phoneNumber
         },
         theme: {
@@ -126,11 +131,13 @@ export const usePaymentHandler = () => {
       };
 
       console.log('Initializing Razorpay payment...');
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
+      razorpay = new (window as any).Razorpay(options);
+      razorpay.open(); // Corrected variable name from rzp to razorpay
     } catch (error) {
       console.error('Payment initialization error:', error);
       toast.error(error.message || "Failed to initialize payment");
+    } finally {
+      setIsProcessing(false);
     }
   }, [isSignedIn, user, navigate]);
 

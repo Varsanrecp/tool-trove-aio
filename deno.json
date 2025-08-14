@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "imports": {
+    "https://esm.sh/": "https://esm.sh/",
+    "npm:":"https://deno.land/x/npm-imports/"
+  }
+}
