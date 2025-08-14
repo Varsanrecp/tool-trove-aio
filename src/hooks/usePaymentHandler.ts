@@ -9,7 +9,7 @@ const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 export const usePaymentHandler = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
-  const { isSignedIn, user, getToken } = useAuth();
+  const { isSignedIn, user } = useAuth();
   const userDetails = user?.primaryEmailAddress?.emailAddress;
 
   const loadRazorpayScript = () => {
@@ -29,11 +29,8 @@ export const usePaymentHandler = () => {
     }
 
     try {
-      const token = await getToken();
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (!user) throw new Error("User not found");
       const subscriptionData = {
-        user_id: user.id,
+        email: userDetails,
         plan_type: 'free',
         status: 'active',
         amount: 0,
@@ -44,7 +41,7 @@ export const usePaymentHandler = () => {
 
       const { error } = await supabase
         .from('subscriptions')
-        .insert([subscriptionData], { headers: { Authorization: `Bearer ${token}` } });
+        .insert([subscriptionData]);
 
       if (error) throw error;
       toast.success("Successfully signed up for free plan");
@@ -67,12 +64,9 @@ export const usePaymentHandler = () => {
       setIsProcessing(true);
       await loadRazorpayScript();
 
-      // Get Clerk session token
-      const token = await getToken();
-
+      // No token needed!
       const orderResponse = await supabase.functions.invoke('create-order', {
-        body: { amount: 10, currency: 'INR' },
-        headers: { Authorization: `Bearer ${token}` }
+        body: { amount: 10, currency: 'INR' }
       });
 
       if (!orderResponse.data || orderResponse.error) {
@@ -90,11 +84,8 @@ export const usePaymentHandler = () => {
         description: 'Premium Plan Subscription',
         handler: async (response: any) => {
           try {
-            const { data: { user } } = await supabase.auth.getUser(token);
-            if (!user) throw new Error("User not found");
-
             const subscriptionData = {
-              user_id: user.id,
+              email: userDetails,
               plan_type: 'premium',
               status: 'active',
               amount: 10,
@@ -104,7 +95,7 @@ export const usePaymentHandler = () => {
             };
             await supabase
               .from('subscriptions')
-              .insert([subscriptionData], { headers: { Authorization: `Bearer ${token}` } });
+              .insert([subscriptionData]);
 
             toast.success("Payment successful! Welcome to Premium");
             navigate('/tools');
@@ -134,7 +125,7 @@ export const usePaymentHandler = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [isSignedIn, user, navigate, getToken, userDetails]);
+  }, [isSignedIn, user, navigate, userDetails]);
 
   return {
     handleFreeSignup,
