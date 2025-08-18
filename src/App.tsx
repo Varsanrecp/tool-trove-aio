@@ -1,4 +1,3 @@
-
 import { Toaster } from 'sonner';
 import { Route, Routes } from 'react-router-dom';
 import { Header } from './components/Header';
@@ -8,6 +7,7 @@ import Contact from './pages/Contact';
 import SavedTools from './pages/SavedTools';
 import SubmitTool from './pages/SubmitTool';
 import PricingPage from './pages/Pricing';
+import LearnAI from './pages/LearnAI';
 
 function App() {
   return (
@@ -20,6 +20,7 @@ function App() {
         <Route path="/saved" element={<SavedTools />} />
         <Route path="/submit" element={<SubmitTool />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/learn-ai" element={<LearnAI />} />
       </Routes>
       <Toaster />
     </div>

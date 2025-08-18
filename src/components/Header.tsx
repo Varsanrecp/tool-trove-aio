@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Wrench, Bookmark, Mail, Plus } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
@@ -23,6 +22,7 @@ export const Header = () => {
         <h1 className="text-2xl font-bold text-primary">AI TOOL COLLECTOR</h1>
         
         <nav className="flex items-center justify-center flex-1 space-x-6 text-sm font-medium">
+          
           <Link
             to="/"
             onClick={handleHomeClick}
@@ -33,6 +33,9 @@ export const Header = () => {
           >
             <Home className="h-4 w-4" />
             <span>Home</span>
+          </Link>
+          <Link to="/learn-ai" className="mx-2">
+            Learn AI
           </Link>
           <Link
             to="/tools"
@@ -78,6 +81,7 @@ export const Header = () => {
             <Mail className="h-4 w-4" />
             <span>Contact</span>
           </Link>
+
         </nav>
         
         <div className="flex items-center gap-4">
