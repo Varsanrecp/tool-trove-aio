@@ -1,7 +1,9 @@
+// LearnAI.tsx
 import React, { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
-import { supabase } from "@/integrations/supabase/client";
-import { useUser } from "@clerk/clerk-react";
+import { createClient } from "@supabase/supabase-js";
+import { supabase as baseSupabase } from "@/integrations/supabase/client";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { ToolCard } from "@/components/ToolCard";
 import { tools as staticTools } from "@/lib/tools"; // fallback for random image
 
@@ -10,10 +12,12 @@ function getRandomToolImage() {
   return random.imageUrl;
 }
 
-const TOOL_CARD_CLASS = "w-full max-w-xs"; // adjust as needed to match your Tools page
+const TOOL_CARD_CLASS = "w-full max-w-xs";
 
 const LearnAI = () => {
   const { isSignedIn, user } = useUser();
+  const { getToken, isLoaded } = useAuth();
+
   const [blogs, setBlogs] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState<any>(null);
@@ -29,24 +33,66 @@ const LearnAI = () => {
   // Blog view modal
   const [viewBlog, setViewBlog] = useState<any>(null);
 
-  // Fetch blogs
+  // ---------- data fetching ----------
   useEffect(() => {
     fetchBlogs();
     fetchTools();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchBlogs() {
-    const { data, error } = await supabase
+    const { data, error } = await baseSupabase
       .from("blogs")
       .select("*")
       .order("created_at", { ascending: false });
-    if (!error) setBlogs(data || []);
+    if (error) {
+      console.error("fetchBlogs error:", error);
+      return;
+    }
+    setBlogs(data || []);
   }
 
   async function fetchTools() {
-    const { data, error } = await supabase.from("tools").select("*");
-    if (!error) setAllTools(data || []);
-    else setAllTools(staticTools); // fallback to static tools if db fails
+    const { data, error } = await baseSupabase.from("tools").select("*");
+    if (error) {
+      console.error("fetchTools error:", error);
+      setAllTools(staticTools);
+      return;
+    }
+    setAllTools(data || []);
+  }
+
+  // ---------- helpers ----------
+  // Create a temporary supabase client that includes Clerk's session token in Authorization header.
+  // IMPORTANT: This uses Clerk's default session token (getToken() without a template).
+  async function getAuthedSupabaseClient() {
+    // make sure Clerk is loaded
+    if (!isLoaded) {
+      throw new Error("Auth not loaded yet. Wait for Clerk to finish loading.");
+    }
+    // get Clerk session token (default)
+    const token = await getToken();
+    if (!token) {
+      throw new Error("No Clerk token found. Are you signed in?");
+    }
+
+    // use your Vite env vars (common defaults)
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!url || !anon) {
+      throw new Error(
+        "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env variables. If you use different names, tell me and I'll update the code."
+      );
+    }
+
+    // create a temporary client that attaches Clerk token to Authorization header
+    return createClient(url, anon, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
   }
 
   function resetForm() {
@@ -83,37 +129,44 @@ const LearnAI = () => {
     });
   }
 
+  // ---------- submit / CRUD ----------
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const img = imageUrl || getRandomToolImage();
-    if (editingBlog) {
-      await supabase
-        .from("blogs")
-        .update({
-          title,
-          content,
-          image_url: img,
-          user_id: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", editingBlog.id);
-    } else {
-      await supabase.from("blogs").insert([
-        {
-          title,
-          content,
-          image_url: img,
-          user_id: user.id,
-        },
-      ]);
+
+    try {
+      if (editingBlog) {
+        await baseSupabase
+          .from("blogs")
+          .update({
+            title,
+            content,
+            image_url: img,
+            user_id: user?.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingBlog.id);
+      } else {
+        await baseSupabase.from("blogs").insert([
+          {
+            title,
+            content,
+            image_url: img,
+            user_id: user?.id,
+          },
+        ]);
+      }
+      setOpen(false);
+      resetForm();
+      fetchBlogs();
+    } catch (err) {
+      console.error("handleSubmit error:", err);
+      alert("Error saving blog. Check console.");
     }
-    setOpen(false);
-    resetForm();
-    fetchBlogs();
   }
 
   async function handleDelete(blogId: string) {
-    await supabase.from("blogs").delete().eq("id", blogId);
+    await baseSupabase.from("blogs").delete().eq("id", blogId);
     fetchBlogs();
   }
 
@@ -126,6 +179,7 @@ const LearnAI = () => {
     setShowContentEditor(true);
   }
 
+  // ---------- UI ----------
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -152,17 +206,17 @@ const LearnAI = () => {
           {blogs.map((blog) => (
             <div
               key={blog.id}
-              className="bg-card border border-border rounded-lg shadow-sm p-6 transition hover:shadow-lg cursor-pointer flex items-center gap-4"
+              className="bg-card border border-border rounded-lg shadow-sm p-6 transition hover:shadow-lg cursor-pointer"
               onClick={() => setViewBlog(blog)}
             >
+              <h2 className="text-xl font-semibold text-primary mb-3">{blog.title}</h2>
               <img
                 src={blog.image_url || getRandomToolImage()}
                 alt={blog.title}
-                className="w-20 h-20 object-cover rounded"
+                className="w-full h-48 object-cover rounded"
               />
-              <h2 className="text-xl font-semibold text-primary">{blog.title}</h2>
-              {isSignedIn && user.id === blog.user_id && (
-                <div className="ml-auto flex gap-2">
+              {isSignedIn && user?.id === blog.user_id && (
+                <div className="mt-4 flex gap-4">
                   <button
                     className="text-blue-600 hover:underline"
                     onClick={e => {
@@ -194,17 +248,15 @@ const LearnAI = () => {
           <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg w-full max-w-3xl p-8">
             {viewBlog && (
               <>
-                <div className="flex flex-col items-center mb-6">
-                  <img
-                    src={viewBlog.image_url || getRandomToolImage()}
-                    alt={viewBlog.title}
-                    className="w-32 h-32 object-cover rounded mb-4"
-                  />
-                  <h2 className="text-2xl font-bold text-primary mb-2">{viewBlog.title}</h2>
-                  <div className="text-xs text-muted-foreground mb-2">
-                    {new Date(viewBlog.created_at).toLocaleString()}
-                  </div>
+                <h2 className="text-2xl font-bold text-primary mb-2 text-center">{viewBlog.title}</h2>
+                <div className="text-xs text-muted-foreground mb-4 text-center">
+                  {new Date(viewBlog.created_at).toLocaleString()}
                 </div>
+                <img
+                  src={viewBlog.image_url || getRandomToolImage()}
+                  alt={viewBlog.title}
+                  className="w-full h-64 object-cover rounded mb-6"
+                />
                 <div className="prose prose-invert max-w-none">
                   {parseContentWithTools(viewBlog.content)}
                 </div>
@@ -222,14 +274,14 @@ const LearnAI = () => {
         </div>
       </Dialog>
 
-      {/* Add/Edit Blog Modal (Step 1: Title & Image) */}
+      {/* Add/Edit Blog Modal (Title + Image) */}
       <Dialog open={open && !showContentEditor} onClose={() => setOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
         <div className="flex items-center justify-center min-h-screen">
           <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg p-8 w-full max-w-lg">
             <Dialog.Title className="text-xl font-bold mb-4">
               {editingBlog ? "Edit Blog" : "Add Blog"}
             </Dialog.Title>
-            <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               <div>
                 <label className="block mb-1 font-medium">Title</label>
                 <input
@@ -239,6 +291,7 @@ const LearnAI = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block mb-1 font-medium">Image (optional)</label>
                 <input
@@ -248,31 +301,62 @@ const LearnAI = () => {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}.${fileExt}`;
-                    // Upload to Supabase Storage
-                    const { data, error } = await supabase.storage
-                      .from('blog-public-images') // <-- use your new bucket name
-                      .upload(fileName, file, { upsert: true });
-                    if (error) {
-                      alert("Upload error: " + error.message);
-                      return;
+
+                    // create a simple safe filename and keep flat in bucket
+                    const fileExt = file.name.split(".").pop();
+                    const safeExt = fileExt ? fileExt.toLowerCase() : "jpg";
+                    const fileName = `${Date.now()}.${safeExt}`;
+
+                    try {
+                      // create authed supabase client that includes Clerk session token in header
+                      const sb = await getAuthedSupabaseClient();
+                      console.log("Uploading to Supabase with Clerk token...");
+
+                      const uploadResult = await sb.storage
+                        .from("blog-public-images")
+                        .upload(fileName, file, { upsert: true });
+
+                      console.log("uploadResult:", uploadResult);
+
+                      if (uploadResult.error) {
+                        console.error("Supabase upload error:", uploadResult.error);
+                        alert("Upload error: " + uploadResult.error.message);
+                        return;
+                      }
+
+                      // get public URL
+                      const publicUrlResult = sb.storage
+                        .from("blog-public-images")
+                        .getPublicUrl(uploadResult.data.path);
+
+                      console.log("publicUrlResult:", publicUrlResult);
+
+                      const publicUrl =
+                        (publicUrlResult.data as any)?.publicUrl ||
+                        (publicUrlResult as any)?.data?.publicUrl;
+
+                      if (!publicUrl) {
+                        console.warn("No public URL returned, but upload succeeded.");
+                        alert("Uploaded but couldn't get public URL. Check storage.");
+                        return;
+                      }
+
+                      setImageUrl(publicUrl);
+                    } catch (err: any) {
+                      console.error("Upload exception:", err);
+                      alert(err?.message || "Unexpected upload error");
                     }
-                    // Get public URL
-                    const { data: publicUrlData } = supabase.storage
-                      .from('blog-public-images')
-                      .getPublicUrl(data.path);
-                    setImageUrl(publicUrlData.publicUrl);
                   }}
                 />
                 {imageUrl && (
                   <img
                     src={imageUrl}
                     alt="Preview"
-                    className="mt-2 w-32 h-32 object-cover rounded"
+                    className="mt-2 w-full h-40 object-cover rounded"
                   />
                 )}
               </div>
+
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -333,6 +417,7 @@ const LearnAI = () => {
                 </button>
               </div>
             </form>
+
             {/* Tool Picker Modal */}
             {showToolPicker && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
