@@ -240,13 +240,38 @@ const LearnAI = () => {
                 />
               </div>
               <div>
-                <label className="block mb-1 font-medium">Image URL (optional)</label>
+                <label className="block mb-1 font-medium">Image (optional)</label>
                 <input
+                  type="file"
+                  accept="image/*"
                   className="w-full border rounded px-3 py-2 bg-background text-foreground placeholder:text-muted-foreground focus:outline-primary"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://..."
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    // Upload to Supabase Storage
+                    const { data, error } = await supabase.storage
+                      .from('blog-public-images') // <-- use your new bucket name
+                      .upload(fileName, file, { upsert: true });
+                    if (error) {
+                      alert("Upload error: " + error.message);
+                      return;
+                    }
+                    // Get public URL
+                    const { data: publicUrlData } = supabase.storage
+                      .from('blog-public-images')
+                      .getPublicUrl(data.path);
+                    setImageUrl(publicUrlData.publicUrl);
+                  }}
                 />
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    className="mt-2 w-32 h-32 object-cover rounded"
+                  />
+                )}
               </div>
               <div className="flex justify-end">
                 <button
