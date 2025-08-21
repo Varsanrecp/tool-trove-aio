@@ -68,8 +68,7 @@ const Home = () => {
       <div className="space-y-16">
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-white">Recommended Tools</h2>
-          <div className="p-8 text-center text-muted-foreground border rounded-lg">Featured tools will appear here for premium users Sign-Up 
-to pay for premium</div>
+          <div className="p-8 text-center text-muted-foreground border rounded-lg">RIGHT NOW DO NOT CHANGE YOUR ACCOUNT FOR PREMIUM THIS IS ONLY IN THE TEST MODE WE ARE WOKING FOR PREMIUM USERS</div>
         </div>
 
         <div className="space-y-12">
