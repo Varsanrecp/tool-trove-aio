@@ -64,15 +64,30 @@ const Home = () => {
     navigate('/pricing');
   };
 
+  // WHEN user presses Enter on the Home search, navigate to Tools with query param
+  const handleHomeSearchSubmit = () => {
+    const trimmed = searchValue.trim();
+    if (trimmed.length === 0) {
+      // navigate to /tools with no query to show all
+      navigate('/tools');
+    } else {
+      navigate(`/tools?search=${encodeURIComponent(trimmed)}`);
+    }
+  };
+
   return <main className="container py-6">
       <div className="space-y-16">
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">Recommended Tools</h2>
-          <div className="p-8 text-center text-muted-foreground border rounded-lg">RIGHT NOW DO NOT CHANGE YOUR ACCOUNT FOR PREMIUM THIS IS ONLY IN THE TEST MODE WE ARE WOKING FOR PREMIUM USERS</div>
+          <h2 className="text-2xl font-semibold text-white">Discover the Best AI Tools in One Place</h2>
+          <div className="p-8 text-center text-muted-foreground border rounded-lg">Stop searching everywhere. Explore, compare, and find the right AI tools for your work in seconds.</div>
         </div>
 
         <div className="space-y-12">
-          <SearchBar value={searchValue} onChange={setSearchValue} />
+          <SearchBar
+            value={searchValue}
+            onChange={setSearchValue}
+            onSubmit={handleHomeSearchSubmit} // Press Enter to go to /tools?search=...
+          />
           <CategoryGrid />
         </div>
         

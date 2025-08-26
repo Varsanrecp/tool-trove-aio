@@ -1,12 +1,12 @@
-
 import { Search } from 'lucide-react';
 
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
+  onSubmit?: () => void; // optional submit (e.g., Enter key)
 }
 
-export const SearchBar = ({ value, onChange }: SearchBarProps) => {
+export const SearchBar = ({ value, onChange, onSubmit }: SearchBarProps) => {
   return (
     <div className="relative w-full max-w-xl mx-auto">
       <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -16,6 +16,12 @@ export const SearchBar = ({ value, onChange }: SearchBarProps) => {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSubmit?.();
+          }
+        }}
         placeholder="Search AI tools..."
         className="w-full h-12 pl-12 pr-4 rounded-xl glass text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
       />

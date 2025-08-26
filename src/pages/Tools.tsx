@@ -4,14 +4,18 @@ import { CategoryFilter } from '../components/CategoryFilter';
 import { ToolCard } from '../components/ToolCard';
 import { supabase } from '@/integrations/supabase/client';
 import { Tool } from '../lib/tools';
-import { useBookmark } from '@/hooks/useBookmark'; // Add this import
+import { useBookmark } from '@/hooks/useBookmark';
+import { useSearchParams } from 'react-router-dom';
 
 const Tools = () => {
-  const [searchValue, setSearchValue] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') ?? '';
+
+  const [searchValue, setSearchValue] = useState(initialSearch);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isBookmarked, toggleBookmark } = useBookmark(); // Add this line
+  const { isBookmarked, toggleBookmark } = useBookmark();
 
   useEffect(() => {
     const fetchTools = async () => {
@@ -30,12 +34,23 @@ const Tools = () => {
     fetchTools();
   }, []);
 
+  // Keep query param in sync with the search input
+  useEffect(() => {
+    if (searchValue && searchValue.trim().length > 0) {
+      setSearchParams({ search: searchValue });
+    } else {
+      setSearchParams({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchValue]);
+
   const filteredTools = tools
     .filter((tool) => {
+      const q = searchValue.toLowerCase();
       const matchesSearch =
-        tool.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchValue.toLowerCase()) ||
-        (tool.tags && tool.tags.some(tag => tag.toLowerCase().includes(searchValue.toLowerCase())));
+        tool.name.toLowerCase().includes(q) ||
+        tool.description.toLowerCase().includes(q) ||
+        (tool.tags && tool.tags.some(tag => tag.toLowerCase().includes(q)));
 
       const matchesCategories =
         selectedCategories.length === 0 ||
