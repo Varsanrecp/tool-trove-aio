@@ -1,3 +1,4 @@
+// src/hooks/usePaymentHandler.ts
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
@@ -10,7 +11,8 @@ export const usePaymentHandler = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { isSignedIn, user } = useAuth();
-  const userDetails = user?.primaryEmailAddress?.emailAddress;
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
+  const userId = (user as any)?.id ?? null;
 
   const loadRazorpayScript = () => {
     return new Promise((resolve, reject) => {
@@ -24,52 +26,46 @@ export const usePaymentHandler = () => {
 
   const handleFreeSignup = async () => {
     if (!isSignedIn) {
-      toast.error("Please sign in to continue with free plan");
+      toast.error('Please sign in to continue with free plan');
       return;
     }
-
     try {
       const subscriptionData = {
-        email: userDetails,
+        email: userEmail,
         plan_type: 'free',
         status: 'active',
         amount: 0,
         currency: 'INR',
         start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       };
-
-      const { error } = await supabase
-        .from('subscriptions')
-        .insert([subscriptionData]);
-
+      const { error } = await supabase.from('subscriptions').insert([subscriptionData]);
       if (error) throw error;
-      toast.success("Successfully signed up for free plan");
+      toast.success('Successfully signed up for free plan');
       navigate('/tools');
-    } catch (error) {
-      toast.error("Failed to sign up for free plan");
+    } catch (error: any) {
+      toast.error('Failed to sign up for free plan');
       console.error(error);
     }
   };
 
   const handlePremiumSignup = useCallback(async () => {
     if (!isSignedIn) {
-      toast.error("Please sign in to continue with premium plan");
+      toast.error('Please sign in to continue with premium plan');
       return;
     }
-
-    let razorpay: any;
 
     try {
       setIsProcessing(true);
       await loadRazorpayScript();
 
-      // No token needed!
+      // Create order server-side and pass user info for notes
       const orderResponse = await supabase.functions.invoke('create-order', {
-        body: { amount: 10, currency: 'INR' }
+        body: { amount: 10, currency: 'INR', user_id: userId, email: userEmail },
       });
 
       if (!orderResponse.data || orderResponse.error) {
+        console.error('create-order error', orderResponse.error);
         throw new Error(orderResponse.error?.message || 'Failed to create payment order');
       }
 
@@ -84,51 +80,58 @@ export const usePaymentHandler = () => {
         description: 'Premium Plan Subscription',
         handler: async (response: any) => {
           try {
-            const subscriptionData = {
-              email: userDetails,
-              plan_type: 'premium',
-              status: 'active',
-              amount: 10,
-              currency: 'INR',
-              start_date: new Date().toISOString(),
-              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-            };
-            await supabase
-              .from('subscriptions')
-              .insert([subscriptionData]);
+            // Call server-side verification function
+            const verifyResponse = await supabase.functions.invoke('verify-payment', {
+              body: {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+            });
 
-            toast.success("Payment successful! Welcome to Premium");
-            navigate('/tools');
-          } catch (error) {
-            console.error('Error saving subscription:', error);
-            toast.error("Failed to save subscription. Please contact support.");
+            if (verifyResponse.error || !verifyResponse.data) {
+              console.error('verify-payment error', verifyResponse.error);
+              toast.error('Payment verification failed. Please contact support.');
+              return;
+            }
+
+            if (verifyResponse.data?.ok) {
+              toast.success('Payment successful! Welcome to Premium');
+              navigate('/tools');
+            } else {
+              toast.error('Payment verification failed. Please contact support.');
+            }
+          } catch (err: any) {
+            console.error('Verification invoke failed', err);
+            toast.error('Payment verification failed. Please contact support.');
           }
         },
         prefill: {
-          email: userDetails,
-          contact: user?.phoneNumbers?.[0]?.phoneNumber
+          email: userEmail,
+          contact: (user as any)?.phoneNumbers?.[0]?.phoneNumber ?? undefined,
         },
         theme: {
-          color: '#6366f1'
+          color: '#6366f1',
         },
         modal: {
-          ondismiss: function() {
-            toast.error("Payment cancelled");
-          }
-        }
+          ondismiss: function () {
+            toast.error('Payment cancelled');
+          },
+        },
       };
 
-      razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
-    } catch (error) {
-      toast.error(error.message || "Failed to initialize payment");
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || 'Failed to initialize payment');
     } finally {
       setIsProcessing(false);
     }
-  }, [isSignedIn, user, navigate, userDetails]);
+  }, [isSignedIn, user, userId, userEmail, navigate]);
 
   return {
     handleFreeSignup,
-    handlePremiumSignup
+    handlePremiumSignup,
   };
 };
