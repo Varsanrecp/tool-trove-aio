@@ -1,11 +1,6 @@
 // supabase/functions/verify-payment/index.ts
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 function bufToHex(buffer: ArrayBuffer) {
   const arr = Array.from(new Uint8Array(buffer));
   return arr.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -20,12 +15,23 @@ async function hmacSha256Hex(secret: string, payload: string) {
 }
 
 Deno.serve(async (req) => {
+  // echo origin so we don't use '*' (keeps credentials safe)
+  const origin = (req.headers.get('origin') || '*');
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+
+  // Preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = body ?? {};
 
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
@@ -38,13 +44,13 @@ Deno.serve(async (req) => {
     const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!razorpayKeyId || !razorpayKeySecret) {
-      throw new Error('Razorpay env not configured');
+      return new Response(JSON.stringify({ error: 'Razorpay environment variables not configured' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
     }
     if (!supabaseUrl || !supabaseServiceRole) {
-      throw new Error('Supabase service role or URL not configured for this function');
+      return new Response(JSON.stringify({ error: 'Supabase service role / URL not configured' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
     }
 
-    // 1) Verify signature
+    // Verify signature (order|payment)
     const payload = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = await hmacSha256Hex(razorpayKeySecret, payload);
 
@@ -53,9 +59,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid signature' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
     }
 
-    // 2) fetch payment & ensure captured
+    // Fetch payment to ensure it's captured
     const authString = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
-
     const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(razorpay_payment_id)}`, {
       headers: { Authorization: `Basic ${authString}` }
     });
@@ -63,11 +68,10 @@ Deno.serve(async (req) => {
     if (!paymentRes.ok) {
       const err = await paymentRes.json().catch(() => ({}));
       console.error('Failed to fetch payment', err);
-      throw new Error('Failed to fetch payment from Razorpay');
+      return new Response(JSON.stringify({ error: 'Failed to fetch payment from Razorpay' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
     }
 
     const payment = await paymentRes.json();
-
     if (String(payment.order_id) !== String(razorpay_order_id)) {
       console.error('Payment order mismatch', { paymentOrder: payment.order_id, expectedOrder: razorpay_order_id });
       return new Response(JSON.stringify({ error: 'Payment does not match order' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
@@ -78,41 +82,27 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Payment not captured' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
     }
 
-    // 3) fetch order to read notes (user_id/email) if you recorded them on create-order
-    const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(razorpay_order_id)}`, {
-      headers: { Authorization: `Basic ${authString}` }
-    });
-
-    let order: any = null;
-    if (orderRes.ok) {
-      order = await orderRes.json().catch(() => null);
-    }
-
-    const user_id = order?.notes?.user_id ?? body?.user_id ?? null;
-    const email = order?.notes?.email ?? body?.email ?? payment?.email ?? null;
-    const amount = payment.amount ?? null;
-    const currency = payment.currency ?? null;
-
-    // 4) persist subscription using service_role key
+    // Persist subscription server-side (service role)
     const supabase = createClient(supabaseUrl, supabaseServiceRole);
 
     const start_date = new Date().toISOString();
     const end_date = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const displayAmount = amount ? Math.round(amount) / 100 : 0;
+    const displayAmount = payment.amount ? Math.round(payment.amount) / 100 : 0;
 
     const subscriptionRow: any = {
-      email: email ?? null,
+      email: payment.email ?? null,
       plan_type: 'premium',
       status: 'active',
       amount: displayAmount ?? 0,
-      currency: currency ?? 'INR',
+      currency: payment.currency ?? 'INR',
       start_date,
       end_date,
       razorpay_order_id,
       razorpay_payment_id,
     };
 
-    if (user_id) subscriptionRow.user_id = user_id;
+    // if you have user_id in payment notes or request, add it
+    if (body.user_id) subscriptionRow.user_id = body.user_id;
 
     const { error: insertError } = await supabase.from('subscriptions').insert([subscriptionRow]);
 
@@ -124,6 +114,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   } catch (err) {
     console.error('verify-payment error', err);
-    return new Response(JSON.stringify({ error: err?.message ?? 'Verification failed' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+    return new Response(JSON.stringify({ error: err?.message ?? 'Verification failed' }), { headers: { 'Content-Type': 'application/json', ...(req.headers.get('origin') ? { 'Access-Control-Allow-Origin': req.headers.get('origin'), 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Credentials': 'true' } : {}) }, status: 400 });
   }
 });
