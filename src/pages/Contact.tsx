@@ -1,99 +1,127 @@
+// src/pages/Contact.tsx
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Mail } from "lucide-react";
 
-import { useState } from 'react';
-import { useUser } from '@clerk/clerk-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Phone, Mail, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
+const SUPPORT_EMAIL = "moneymindsmastery@gmail.com";
 
-const Contact = () => {
-  const [feedback, setFeedback] = useState('');
-  const { isSignedIn, user } = useUser();
+const Contact: React.FC = () => {
+  const [copied, setCopied] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isSignedIn) {
-      toast.error("Please sign in to submit feedback", {
-        description: "You need to be signed in to submit feedback.",
-        action: {
-          label: "Sign In",
-          onClick: () => document.querySelector<HTMLButtonElement>('[data-clerk-trigger]')?.click(),
-        },
-      });
-      return;
-    }
-    
-    if (feedback.trim()) {
-      // Here you would typically send the feedback to your backend
-      toast.success("Thank you for your feedback!");
-      setFeedback('');
+  const handleMailTo = () => {
+    const subject = encodeURIComponent("Feedback for AI TOOL Collector");
+    const body = encodeURIComponent(
+      `Hi,\n\nI'm excited to share feedback about your AI TOOL Collector project:\n\n`
+    );
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // ignore silently - clipboard may be blocked
+      setCopied(false);
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background">
+    <div className="min-h-[calc(100vh-4rem)] bg-background flex items-start sm:items-center">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto space-y-12">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight">Contact Us</h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              We'd love to hear from you. Please get in touch with us using the information below.
+        <div className="max-w-2xl mx-auto flex flex-col items-center gap-8">
+
+          {/* Page header */}
+          <header className="text-center">
+            <h1 className="text-4xl font-bold tracking-tight">Contact</h1>
+            <p className="mt-3 text-lg text-muted-foreground">
+              We'd love to hear from you. Reach out via email — I read every message.
             </p>
-          </div>
+          </header>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg">
-              <Phone className="h-6 w-6 mb-4 text-primary" />
-              <h3 className="font-semibold">Phone</h3>
-              <p className="text-sm text-muted-foreground mt-2">+91 98765 43210</p>
-            </div>
-
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg">
-              <Mail className="h-6 w-6 mb-4 text-primary" />
-              <h3 className="font-semibold">Email</h3>
-              <p className="text-sm text-muted-foreground mt-2">contact@aitools.com</p>
-            </div>
-
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg">
-              <MapPin className="h-6 w-6 mb-4 text-primary" />
-              <h3 className="font-semibold">Address</h3>
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                123 Tech Park<br />
-                Bangalore, Karnataka<br />
-                India
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-card p-8 rounded-lg">
-            <h2 className="text-2xl font-semibold mb-6">Send us your feedback</h2>
-            {isSignedIn ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Textarea
-                    placeholder="Your feedback..."
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    className="min-h-[150px]"
-                  />
+          {/* Email card */}
+          <section className="w-full">
+            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center gap-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-md bg-primary/10">
+                  <Mail className="h-7 w-7 text-primary" />
                 </div>
-                <Button type="submit">Submit Feedback</Button>
-              </form>
-            ) : (
-              <div className="text-center p-6 bg-muted rounded-lg">
-                <p className="text-muted-foreground mb-4">
-                  Please sign in to submit feedback
-                </p>
+                <div className="text-left">
+                  <h2 className="text-xl font-semibold">Email</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    For feedback, suggestions or collaboration, email:
+                  </p>
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    className="mt-2 inline-block text-primary underline text-sm"
+                    aria-label={`Email ${SUPPORT_EMAIL}`}
+                  >
+                    {SUPPORT_EMAIL}
+                  </a>
+                </div>
+              </div>
+
+              {/* Actions (centered) */}
+              <div className="flex items-center gap-3 mt-3">
                 <Button
-                  onClick={() => 
-                    document.querySelector<HTMLButtonElement>('[data-clerk-trigger]')?.click()
-                  }
+                  onClick={handleMailTo}
+                  className="px-4 py-2"
+                  aria-label="Open mail client to send feedback"
                 >
-                  Sign In
+                  Email Me
+                </Button>
+
+                <Button
+                  onClick={handleCopy}
+                  variant="outline"
+                  className="px-4 py-2"
+                  aria-label="Copy email address"
+                >
+                  {copied ? "Copied!" : "Copy Email"}
                 </Button>
               </div>
-            )}
-          </div>
+
+              {/* small hint below actions */}
+              <div className="text-xs text-muted-foreground mt-2">
+                I usually read messages and will reply as soon as I can — looking forward to hearing from you.
+              </div>
+            </div>
+          </section>
+
+          {/* Why feedback matters */}
+          <section className="w-full">
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-semibold mb-3">Why your feedback is valuable</h3>
+
+              <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <strong>Shape the product:</strong> Your input helps decide which features to build next.
+                </li>
+                <li>
+                  <strong>Find real issues:</strong> Real-user reports help me spot and fix bugs faster.
+                </li>
+                <li>
+                  <strong>Improve the experience:</strong> Tell me what’s confusing so I can make the UI clearer.
+                </li>
+                <li>
+                  <strong>Inform pricing & priorities:</strong> Your use-cases show what should be free vs premium.
+                </li>
+                <li>
+                  <strong>Early collaboration:</strong> If you want to help build or test, mention your role and I’ll reach out.
+                </li>
+              </ul>
+
+              <div className="mt-4 text-sm text-muted-foreground">
+                This is my first micro-SaaS — every message helps me iterate quickly and build something people actually love. Thanks for taking the time to share!
+              </div>
+            </div>
+          </section>
+
+          {/* Footer-like small line */}
+          <footer className="text-center text-xs text-muted-foreground mt-2">
+            © {new Date().getFullYear()} AI TOOL Collector — Built with care.
+          </footer>
         </div>
       </div>
     </div>
