@@ -1,4 +1,3 @@
-// LearnAI.tsx
 import React, { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { createClient } from "@supabase/supabase-js";
@@ -14,7 +13,7 @@ function getRandomToolImage() {
 
 const TOOL_CARD_CLASS = "w-full max-w-xs";
 
-const LearnAI = () => {
+const LearnAI: React.FC = () => {
   const { isSignedIn, user } = useUser();
   const { getToken, isLoaded } = useAuth();
 
@@ -63,29 +62,23 @@ const LearnAI = () => {
   }
 
   // ---------- helpers ----------
-  // Create a temporary supabase client that includes Clerk's session token in Authorization header.
-  // IMPORTANT: This uses Clerk's default session token (getToken() without a template).
   async function getAuthedSupabaseClient() {
-    // make sure Clerk is loaded
     if (!isLoaded) {
       throw new Error("Auth not loaded yet. Wait for Clerk to finish loading.");
     }
-    // get Clerk session token (default)
     const token = await getToken();
     if (!token) {
       throw new Error("No Clerk token found. Are you signed in?");
     }
 
-    // use your Vite env vars (common defaults)
     const url = import.meta.env.VITE_SUPABASE_URL;
     const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (!url || !anon) {
       throw new Error(
-        "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env variables. If you use different names, tell me and I'll update the code."
+        "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env variables."
       );
     }
 
-    // create a temporary client that attaches Clerk token to Authorization header
     return createClient(url, anon, {
       global: {
         headers: {
@@ -104,29 +97,112 @@ const LearnAI = () => {
   }
 
   function handleAddTool(tool: any) {
-    setContent((prev) => prev + ` [tool:${tool.id}] `);
+    // place tool as its own block (surrounded by blank lines)
+    setContent((prev) => prev + `\n\n[tool:${tool.id}]\n\n`);
     setShowToolPicker(false);
   }
 
-  function parseContentWithTools(content: string) {
+  /**
+   * parseContentWithTools
+   * - normalizes newlines
+   * - produces a flat stack of blocks
+   * - tool block -> full-width centered tool card
+   * - if a tool is followed by a text block, that text is rendered below the tool
+   * - single newline inside a paragraph becomes <br/>
+   */
+  function parseContentWithTools(contentStr: string) {
+    if (!contentStr) return null;
+
+    // Normalize CRLF -> LF
+    const content = contentStr.replace(/\r\n/g, "\n");
+
+    // Split into parts and preserve [tool:...] tokens
     const parts = content.split(/(\[tool:[^\]]+\])/g);
-    return parts.map((part, idx) => {
-      const match = part.match(/\[tool:(.+)\]/);
-      if (match) {
-        const toolId = match[1];
-        const tool = allTools.find((t) => t.id === toolId);
-        if (tool)
-          return (
-            <div key={idx} className="my-4 flex justify-center">
-              <div className={TOOL_CARD_CLASS}>
-                <ToolCard tool={tool} isBookmarked={false} toggleBookmark={() => {}} />
-              </div>
-            </div>
-          );
-        return <span key={idx} className="text-red-500">[Unknown Tool]</span>;
+
+    type Block =
+      | { type: "text"; text: string }
+      | { type: "tool"; toolId: string };
+
+    const blocks: Block[] = [];
+    let textBuffer = "";
+
+    const flushTextBuffer = () => {
+      if (textBuffer.trim() !== "") {
+        blocks.push({ type: "text", text: textBuffer });
       }
-      return <span key={idx}>{part}</span>;
-    });
+      textBuffer = "";
+    };
+
+    for (const p of parts) {
+      const m = p.match(/^\[tool:(.+)\]$/);
+      if (m) {
+        flushTextBuffer();
+        blocks.push({ type: "tool", toolId: m[1].trim() });
+      } else {
+        textBuffer += p;
+      }
+    }
+    flushTextBuffer();
+
+    // Render helper: text -> paragraph elements, preserve single line breaks as <br/>
+    const renderParagraphs = (text: string, keyBase: string) => {
+      const paras = text
+        .split(/\n{2,}/g) // paragraphs split by 2+ newlines
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      return paras.map((p, idx) => {
+        const lines = p.split(/\n/g); // single newline => line break
+        return (
+          <p key={`${keyBase}-p-${idx}`} className="mb-4 text-base leading-7 text-muted-foreground">
+            {lines.map((line, li) => (
+              <React.Fragment key={`${keyBase}-p-${idx}-l-${li}`}>
+                {line}
+                {li < lines.length - 1 ? <br /> : null}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      });
+    };
+
+    const rendered: React.ReactNode[] = [];
+
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (b.type === "text") {
+        rendered.push(...renderParagraphs(b.text, `text-${i}`));
+        continue;
+      }
+
+      // b.type === "tool"
+      const tool = allTools.find((t) => String(t.id) === String(b.toolId));
+      // render the tool as full-width (centered)
+      if (tool) {
+        rendered.push(
+          <div key={`tool-full-${i}`} className="my-6 flex justify-center">
+            <div className={TOOL_CARD_CLASS}>
+              <ToolCard tool={tool} isBookmarked={false} toggleBookmark={() => {}} />
+            </div>
+          </div>
+        );
+      } else {
+        rendered.push(
+          <div key={`tool-unknown-${i}`} className="my-4 text-red-500">
+            [Unknown Tool: {b.toolId}]
+          </div>
+        );
+      }
+
+      // If next block is text, render it **below** the tool (not side-by-side)
+      const next = blocks[i + 1];
+      if (next && next.type === "text") {
+        rendered.push(...renderParagraphs(next.text, `tool-${i}-text`));
+        i++; // consume the text block so it doesn't get processed again
+      }
+    }
+
+    return rendered;
   }
 
   // ---------- submit / CRUD ----------
@@ -174,7 +250,7 @@ const LearnAI = () => {
     setEditingBlog(blog);
     setTitle(blog.title);
     setImageUrl(blog.image_url || "");
-    setContent(blog.content);
+    setContent(blog.content || "");
     setOpen(true);
     setShowContentEditor(true);
   }
@@ -209,17 +285,28 @@ const LearnAI = () => {
               className="bg-card border border-border rounded-lg shadow-sm p-6 transition hover:shadow-lg cursor-pointer"
               onClick={() => setViewBlog(blog)}
             >
-              <h2 className="text-xl font-semibold text-primary mb-3">{blog.title}</h2>
-              <img
-                src={blog.image_url || getRandomToolImage()}
-                alt={blog.title}
-                className="w-full h-48 object-cover rounded"
-              />
+              <div className="mb-4">
+                <img
+                  src={blog.image_url || getRandomToolImage()}
+                  alt={blog.title}
+                  className="w-full h-44 object-cover rounded"
+                />
+              </div>
+              <h2 className="text-xl font-semibold text-primary mb-2">{blog.title}</h2>
+              <div className="text-sm text-muted-foreground mb-3">{new Date(blog.created_at).toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">
+                {String(blog.content || "")
+                  .replace(/\[tool:[^\]]+\]/g, "")
+                  .slice(0, 220)
+                  .trim()}
+                {String(blog.content || "").replace(/\[tool:[^\]]+\]/g, "").length > 220 ? "..." : ""}
+              </div>
+
               {isSignedIn && user?.id === blog.user_id && (
                 <div className="mt-4 flex gap-4">
                   <button
                     className="text-blue-600 hover:underline"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleEdit(blog);
                     }}
@@ -228,7 +315,7 @@ const LearnAI = () => {
                   </button>
                   <button
                     className="text-red-600 hover:underline"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(blog.id);
                     }}
@@ -244,22 +331,29 @@ const LearnAI = () => {
 
       {/* Blog View Modal */}
       <Dialog open={!!viewBlog} onClose={() => setViewBlog(null)} className="fixed z-50 inset-0 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen">
-          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg w-full max-w-3xl p-8">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg w-full max-w-3xl p-6 md:p-8 overflow-auto">
             {viewBlog && (
-              <>
-                <h2 className="text-2xl font-bold text-primary mb-2 text-center">{viewBlog.title}</h2>
-                <div className="text-xs text-muted-foreground mb-4 text-center">
-                  {new Date(viewBlog.created_at).toLocaleString()}
+              <article>
+                <header className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-primary mb-2">{viewBlog.title}</h2>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(viewBlog.created_at).toLocaleString()}
+                  </div>
+                </header>
+
+                <div className="mb-6">
+                  <img
+                    src={viewBlog.image_url || getRandomToolImage()}
+                    alt={viewBlog.title}
+                    className="w-full h-64 object-cover rounded"
+                  />
                 </div>
-                <img
-                  src={viewBlog.image_url || getRandomToolImage()}
-                  alt={viewBlog.title}
-                  className="w-full h-64 object-cover rounded mb-6"
-                />
-                <div className="prose prose-invert max-w-none">
-                  {parseContentWithTools(viewBlog.content)}
+
+                <div className="max-w-prose mx-auto">
+                  {parseContentWithTools(viewBlog.content || "")}
                 </div>
+
                 <div className="flex justify-end mt-6">
                   <button
                     className="px-4 py-2 rounded bg-muted text-foreground"
@@ -268,7 +362,7 @@ const LearnAI = () => {
                     Close
                   </button>
                 </div>
-              </>
+              </article>
             )}
           </Dialog.Panel>
         </div>
@@ -276,8 +370,8 @@ const LearnAI = () => {
 
       {/* Add/Edit Blog Modal (Title + Image) */}
       <Dialog open={open && !showContentEditor} onClose={() => setOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen">
-          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg p-8 w-full max-w-lg">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg p-6 w-full max-w-lg">
             <Dialog.Title className="text-xl font-bold mb-4">
               {editingBlog ? "Edit Blog" : "Add Blog"}
             </Dialog.Title>
@@ -302,21 +396,15 @@ const LearnAI = () => {
                     const file = e.target.files?.[0];
                     if (!file) return;
 
-                    // create a simple safe filename and keep flat in bucket
                     const fileExt = file.name.split(".").pop();
                     const safeExt = fileExt ? fileExt.toLowerCase() : "jpg";
                     const fileName = `${Date.now()}.${safeExt}`;
 
                     try {
-                      // create authed supabase client that includes Clerk session token in header
                       const sb = await getAuthedSupabaseClient();
-                      console.log("Uploading to Supabase with Clerk token...");
-
                       const uploadResult = await sb.storage
                         .from("blog-public-images")
                         .upload(fileName, file, { upsert: true });
-
-                      console.log("uploadResult:", uploadResult);
 
                       if (uploadResult.error) {
                         console.error("Supabase upload error:", uploadResult.error);
@@ -324,12 +412,9 @@ const LearnAI = () => {
                         return;
                       }
 
-                      // get public URL
                       const publicUrlResult = sb.storage
                         .from("blog-public-images")
                         .getPublicUrl(uploadResult.data.path);
-
-                      console.log("publicUrlResult:", publicUrlResult);
 
                       const publicUrl =
                         (publicUrlResult.data as any)?.publicUrl ||
@@ -374,8 +459,8 @@ const LearnAI = () => {
 
       {/* Fullscreen Blog Content Editor */}
       <Dialog open={open && showContentEditor} onClose={() => setOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen">
-          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg w-full max-w-3xl p-8">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <Dialog.Panel className="bg-card border border-border rounded-lg shadow-lg w-full max-w-3xl p-6">
             <Dialog.Title className="text-xl font-bold mb-4">
               {editingBlog ? "Edit Blog Content" : "Write Your Blog"}
             </Dialog.Title>
@@ -387,7 +472,7 @@ const LearnAI = () => {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   required
-                  placeholder="Write your blog here. Use the + Add Tool button to embed tools."
+                  placeholder="Write your blog here. Use the + Add Tool button to embed tools. After a tool, text will appear below it."
                 />
                 <button
                   type="button"
