@@ -1,40 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { CategoryGrid } from '../components/CategoryGrid';
-import { SearchBar } from '../components/SearchBar';
-import { Tool } from '../lib/tools';
-import { ToolCard } from '../components/ToolCard';
-import { Button } from '../components/ui/button';
-import { ArrowRight, Check } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useBookmark } from '@/hooks/useBookmark';
+// src/pages/Home.tsx
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { CategoryGrid } from "../components/CategoryGrid";
+import { SearchBar } from "../components/SearchBar";
+import { Tool } from "../lib/tools";
+import { ToolCard } from "../components/ToolCard";
+import { Button } from "../components/ui/button";
+import { ArrowRight, Check } from "lucide-react";
+import { useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useBookmark } from "@/hooks/useBookmark";
+import { StaggeredContainer } from "@/components/Motion";
 
 const Home = () => {
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
   const [tools, setTools] = useState<Tool[]>([]);
-  const [userCountry, setUserCountry] = useState('');
-  const [priceAmount, setPriceAmount] = useState('$7');
+  const [userCountry, setUserCountry] = useState("");
+  const [priceAmount, setPriceAmount] = useState("$7");
   const navigate = useNavigate();
   const location = useLocation();
   const { isSignedIn } = useUser();
   const { isBookmarked, toggleBookmark } = useBookmark();
 
-  const featuredTools = tools.filter(tool => tool.featured).slice(0, 3);
-  
+  const featuredTools = tools.filter((tool) => tool.featured).slice(0, 3);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   useEffect(() => {
     const fetchTools = async () => {
-      const { data, error } = await supabase
-        .from('tools')
-        .select('*');
+      const { data, error } = await supabase.from("tools").select("*");
 
       if (error) {
-        console.error('Error fetching tools:', error);
+        console.error("Error fetching tools:", error);
       } else {
         setTools(data as Tool[]);
       }
@@ -44,38 +44,28 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(data => {
+    fetch("https://ipapi.co/json/")
+      .then((res) => res.json())
+      .then((data) => {
         setUserCountry(data.country);
-        if (data.country === 'IN') {
-          setPriceAmount('₹10');
+        if (data.country === "IN") {
+          setPriceAmount("₹10");
         } else {
-          setPriceAmount('$2');
+          setPriceAmount("$2");
         }
       })
-      .catch(error => {
-        console.error('Error fetching location:', error);
-        setPriceAmount('$2');
+      .catch((error) => {
+        console.error("Error fetching location:", error);
+        setPriceAmount("$2");
       });
   }, []);
 
   const handleUpgradeClick = () => {
-    navigate('/pricing');
+    navigate("/pricing");
   };
 
-  // WHEN user presses Enter on the Home search, navigate to Tools with query param
-  const handleHomeSearchSubmit = () => {
-    const trimmed = searchValue.trim();
-    if (trimmed.length === 0) {
-      // navigate to /tools with no query to show all
-      navigate('/tools');
-    } else {
-      navigate(`/tools?search=${encodeURIComponent(trimmed)}`);
-    }
-  };
-
-  return <main className="container py-6">
+  return (
+    <main className="container py-6">
       <div className="space-y-16">
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-white">Discover the Best AI Tools in One Place</h2>
@@ -83,35 +73,27 @@ const Home = () => {
         </div>
 
         <div className="space-y-12">
-          <SearchBar
-            value={searchValue}
-            onChange={setSearchValue}
-            onSubmit={handleHomeSearchSubmit} // Press Enter to go to /tools?search=...
-          />
+          <SearchBar value={searchValue} onChange={setSearchValue} />
           <CategoryGrid />
         </div>
-        
+
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold text-white">Popular Tools</h2>
-            <Button onClick={() => navigate('/tools')} variant="secondary" className="group">
+            <Button onClick={() => navigate("/tools")} variant="secondary" className="group">
               See All Tools
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredTools.map(tool => (
-              <ToolCard
-                key={tool.id}
-                tool={tool}
-                isBookmarked={isBookmarked(tool.id)}
-                toggleBookmark={() => toggleBookmark(tool)}
-              />
+
+          <StaggeredContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} isBookmarked={isBookmarked(tool.id)} toggleBookmark={() => toggleBookmark(tool)} />
             ))}
-          </div>
+          </StaggeredContainer>
         </div>
 
+        {/* Pricing cards unchanged... */}
         <div className="space-y-8">
           <h2 className="text-2xl font-semibold text-white text-center">Pricing Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -141,9 +123,7 @@ const Home = () => {
 
             <div className="p-6 rounded-lg border bg-card hover:border-primary transition-colors relative overflow-hidden">
               <div className="absolute top-3 right-3">
-                <span className="px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
-                  Popular
-                </span>
+                <span className="px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">Popular</span>
               </div>
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Premium Plan</h3>
@@ -166,15 +146,14 @@ const Home = () => {
                     <span>Early access to new features</span>
                   </li>
                 </ul>
-                <Button className="w-full" onClick={handleUpgradeClick}>
-                  Upgrade Now
-                </Button>
+                <Button className="w-full" onClick={handleUpgradeClick}>Upgrade Now</Button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </main>;
+    </main>
+  );
 };
 
 export default Home;
