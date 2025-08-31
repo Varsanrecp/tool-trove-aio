@@ -2,7 +2,7 @@
 import { Toaster } from "sonner";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Analytics } from "@vercel/analytics/next";
+
 import { Header } from "@/components/Header";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
@@ -32,7 +32,7 @@ function App() {
         </Routes>
       </AnimatePresence>
       <Toaster />
-      <Analytics />
+
     </div>
   );
 }
