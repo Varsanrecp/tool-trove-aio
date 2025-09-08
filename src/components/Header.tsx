@@ -18,8 +18,14 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-      <div className="container flex h-auto py-4">
-        <h1 className="text-2xl font-bold text-primary">AI TOOL COLLECTOR</h1>
+      <div className="container flex h-auto py-4 items-center">
+        <Link to="/" onClick={handleHomeClick}>
+          <img 
+            src="/toolexpo-high-resolution-logo-transparent (2).png "
+            alt=" Tool Expo Logo " 
+            className="h-8 w-auto"
+          />
+        </Link>
         
         <nav className="flex items-center justify-center flex-1 space-x-6 text-sm font-medium">
           
