@@ -1,37 +1,26 @@
 // src/pages/Home.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import Hero from "@/components/home/Hero";
 import Stats from "@/components/home/Stats";
 import FeaturedTools from "@/components/home/FeaturedTools";
 import Testimonials from "@/components/home/Testimonials";
 import FAQ from "@/components/home/FAQ";
 import CTASection from "@/components/home/CTASection";
-import { SearchBar } from "@/components/SearchBar";
-import { CategoryGrid } from "@/components/CategoryGrid";
+import { useCurrency } from "@/hooks/useCurrency";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Pricing geo logic (kept)
-  const [priceAmount, setPriceAmount] = useState("₹10");
+  // read display currency & price via hook (falls back inside hook if geo fails)
+  const { currencySymbol, premiumPrice } = useCurrency();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
-
-  useEffect(() => {
-    fetch("https://ipapi.co/json/")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.country === "IN") setPriceAmount("₹10");
-        else setPriceAmount("$2");
-      })
-      .catch(() => setPriceAmount("$2"));
-  }, []);
 
   const handleUpgradeClick = () => navigate("/pricing");
 
@@ -43,9 +32,7 @@ const Home: React.FC = () => {
       {/* STATS */}
       <Stats />
 
-
-
-      {/* FEATURED TOOLS (placeholders now) */}
+      {/* FEATURED TOOLS */}
       <FeaturedTools />
 
       {/* TESTIMONIALS */}
@@ -57,7 +44,7 @@ const Home: React.FC = () => {
       {/* CTA */}
       <CTASection />
 
-      {/* PRICING (unchanged, kept at bottom) */}
+      {/* PRICING (kept at bottom, now uses currency hook for consistency) */}
       <section className="space-y-8">
         <h2 className="text-2xl font-semibold text-white text-center">Pricing Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -65,7 +52,7 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Free Plan</h3>
               <p className="text-3xl font-bold">
-                ₹0
+                {currencySymbol}0
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </p>
               <ul className="space-y-2">
@@ -97,7 +84,7 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Premium Plan</h3>
               <p className="text-3xl font-bold">
-                {priceAmount}
+                {premiumPrice}
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </p>
               <ul className="space-y-2">

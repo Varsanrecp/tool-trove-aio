@@ -1,21 +1,28 @@
-
+// src/pages/Pricing.tsx
+import React from "react";
 import { usePaymentHandler } from "@/hooks/usePaymentHandler";
 import { PricingCard } from "@/components/pricing/PricingCard";
+import { useCurrency } from "@/hooks/useCurrency";
 
-const PricingPage = () => {
+const PricingPage: React.FC = () => {
+  // read display currency & price
+  const { currencySymbol, premiumPriceNumber } = useCurrency();
+
+  // keep using your existing payment handler (unchanged behavior)
+  // NOTE: payment handler still uses the backend / Razorpay flow you already have
   const { handleFreeSignup, handlePremiumSignup } = usePaymentHandler();
 
   const freeFeatures = [
     "Access to all AI tools",
     "Basic search functionality",
-    "Save favorite tools"
+    "Save favorite tools",
   ];
 
   const premiumFeatures = [
     "All Free Plan features",
     "Featured in recommendations",
     "Priority support",
-    "Early access to new features"
+    "Early access to new features",
   ];
 
   return (
@@ -31,7 +38,7 @@ const PricingPage = () => {
         <PricingCard
           title="Free Plan"
           price="0"
-          currency="₹"
+          currency={currencySymbol}
           features={freeFeatures}
           buttonText="Get Started"
           onSubscribe={handleFreeSignup}
@@ -39,8 +46,8 @@ const PricingPage = () => {
 
         <PricingCard
           title="Premium Plan"
-          price="10"
-          currency="₹"
+          price={String(premiumPriceNumber)}
+          currency={currencySymbol}
           features={premiumFeatures}
           buttonText="Upgrade Now"
           onSubscribe={handlePremiumSignup}
