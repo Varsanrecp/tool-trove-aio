@@ -26,13 +26,15 @@ function App() {
           <Route path="/tools" element={<PageTransition><Tools /></PageTransition>} />
           <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
           <Route path="/saved" element={<PageTransition><SavedTools /></PageTransition>} />
+          {/* submit new tool */}
           <Route path="/submit" element={<PageTransition><SubmitTool /></PageTransition>} />
+          {/* edit existing tool (SubmitTool reads toolId from params) */}
+          <Route path="/submit/:toolId" element={<PageTransition><SubmitTool /></PageTransition>} />
           <Route path="/pricing" element={<PageTransition><PricingPage /></PageTransition>} />
           <Route path="/learn-ai" element={<PageTransition><LearnAI /></PageTransition>} />
         </Routes>
       </AnimatePresence>
       <Toaster />
-
     </div>
   );
 }

@@ -1,22 +1,29 @@
+// src/components/ToolCard.tsx
 import { Tool } from '@/lib/tools';
 import { useBookmark } from '@/hooks/useBookmark';
-import { Bookmark, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Bookmark, ThumbsUp, ThumbsDown, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
+import React, { useState } from 'react';
 
 interface ToolCardProps {
-  tool: Tool;
+  tool: Tool & { user_id?: string | null };
   isBookmarked: boolean;
   toggleBookmark: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) => {
+export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit, onDelete }: ToolCardProps) => {
   const { toggleVote, hasVoted, getUserVote, getToolVotes } = useBookmark();
   const toolVotes = getToolVotes(tool.id);
   const userVote = getUserVote(tool.id);
+  const { user } = useUser();
+
+  const [manageOpen, setManageOpen] = useState(false);
 
   const handleVote = (voteType: 'up' | 'down') => {
     toggleVote(tool.id, voteType);
@@ -33,8 +40,10 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) 
     }
   };
 
+  const isOwner = !!user?.id && !!tool.user_id && user.id === tool.user_id;
+
   return (
-    <div className="glass rounded-lg overflow-hidden hover-card">
+    <div className="glass rounded-lg overflow-hidden hover-card relative">
       <div className="relative aspect-video">
         <img
           src={tool.imageUrl}
@@ -42,9 +51,12 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) 
           className="object-cover w-full h-full"
           loading="lazy"
         />
+
+        {/* Bookmark button */}
         <button
           onClick={toggleBookmark}
-          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
+          aria-label="Toggle bookmark"
         >
           <Bookmark
             className={cn(
@@ -53,12 +65,26 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) 
             )}
           />
         </button>
-        <div className="absolute top-4 left-4">
+
+        {/* Manage (owner only) */}
+        {isOwner && (
+          <button
+            onClick={() => setManageOpen(true)}
+            className="absolute top-4 right-12 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
+            aria-label="Manage tool"
+            title="Manage (edit / delete)"
+          >
+            <MoreHorizontal className="w-5 h-5 text-white" />
+          </button>
+        )}
+
+        <div className="absolute top-4 left-4 z-10">
           <Badge className={cn("capitalize", getPricingColor(tool.pricing))}>
             {tool.pricing}
           </Badge>
         </div>
       </div>
+
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div>
@@ -67,7 +93,7 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) 
           </div>
         </div>
         <div className="flex gap-2 mt-4 flex-wrap">
-          {tool.tags.map((tag) => (
+          {Array.isArray(tool.tags) && tool.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="capitalize">
               {tag}
             </Badge>
@@ -112,6 +138,42 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark }: ToolCardProps) 
           </a>
         </div>
       </div>
+
+      {/* Manage modal (very small) */}
+      {manageOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setManageOpen(false)} />
+          <div className="bg-card border border-border rounded-lg p-6 z-50 w-full max-w-sm">
+            <h4 className="text-lg font-semibold mb-3">Manage tool</h4>
+            <p className="text-sm text-muted-foreground mb-4">Edit or delete this tool.</p>
+            <div className="flex gap-3 justify-end">
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setManageOpen(false);
+                    onEdit();
+                  }}
+                >
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  onClick={() => {
+                    setManageOpen(false);
+                    onDelete();
+                  }}
+                  className="bg-red-600"
+                >
+                  Delete
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setManageOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
