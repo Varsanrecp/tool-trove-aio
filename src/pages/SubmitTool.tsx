@@ -88,7 +88,7 @@ export default function SubmitTool() {
     });
   }
 
-  // If a toolId is present -> load the tool into the form (edit mode)
+  // load tool if editing
   useEffect(() => {
     if (!toolId) return;
     let cancelled = false;
@@ -130,7 +130,6 @@ export default function SubmitTool() {
     try {
       const sb = await getAuthedSupabaseClient();
 
-      // finalImageUrl starts as existingImageUrl (if any)
       let finalImageUrl = existingImageUrl ?? `https://images.unsplash.com/photo-1488590528505-98d2b5aba04b`;
 
       if (file) {
@@ -160,7 +159,6 @@ export default function SubmitTool() {
       };
 
       if (toolId) {
-        // Update existing tool (do NOT modify user_id here)
         const { error: updateErr } = await sb.from('tools').update(toolPayload).eq('id', toolId);
         if (updateErr) {
           console.error('Update error:', updateErr);
@@ -170,7 +168,6 @@ export default function SubmitTool() {
         }
         toast.success('Tool updated successfully!');
       } else {
-        // Insert new tool (set owner / user_id)
         const insertPayload = { ...toolPayload, user_id: user.id };
         const { error: insertErr } = await sb.from('tools').insert([insertPayload]);
         if (insertErr) {
@@ -197,10 +194,10 @@ export default function SubmitTool() {
   if (!isSignedIn) return null;
 
   return (
-    <div className="container max-w-2xl py-10">
-      <h1 className="text-2xl font-bold mb-8">{toolId ? 'Edit Tool' : 'Submit a New Tool'}</h1>
+    <div className="container max-w-2xl py-8 px-4 sm:px-0">
+      <h1 className="text-2xl font-bold mb-6">{toolId ? 'Edit Tool' : 'Submit a New Tool'}</h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField control={form.control} name="name" render={({ field }) => (
             <FormItem>
               <FormLabel>Tool Name</FormLabel>
@@ -225,44 +222,51 @@ export default function SubmitTool() {
             </FormItem>
           )} />
 
-          <FormField control={form.control} name="pricing" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pricing</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select pricing type" /></SelectTrigger></FormControl>
-                <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="trial">Trial</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField control={form.control} name="pricing" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pricing</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select pricing type" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="trial">Trial</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-          <FormField control={form.control} name="tags" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tags</FormLabel>
-              <FormControl><Input placeholder="productivity, ai, tools (comma separated)" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+            <FormField control={form.control} name="tags" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tags</FormLabel>
+                <FormControl><Input placeholder="productivity, ai, tools (comma separated)" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
 
           <FormItem>
             <FormLabel>Image (optional)</FormLabel>
             <FormControl>
-              <input type="file" accept="image/*" onChange={handleFileChange} className="w-full border rounded px-3 py-2 bg-background text-foreground" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full border rounded px-3 py-2 bg-background text-foreground"
+              />
             </FormControl>
             <FormMessage />
             {previewUrl && (
               <div className="mt-3">
-                <img src={previewUrl} alt="Preview" className="w-40 h-24 object-cover rounded" />
+                <img src={previewUrl} alt="Preview" className="w-full sm:w-40 h-auto object-cover rounded" />
               </div>
             )}
           </FormItem>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={submitting}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
               {submitting ? (toolId ? 'Updating...' : 'Submitting...') : (toolId ? 'Update Tool' : 'Submit Tool')}
             </Button>
           </div>

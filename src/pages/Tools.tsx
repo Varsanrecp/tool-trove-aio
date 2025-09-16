@@ -39,15 +39,13 @@ const Tools: React.FC = () => {
     fetchTools();
   }, []);
 
-  // Keep query param in sync with the search input
   useEffect(() => {
     if (searchValue && searchValue.trim().length > 0) {
       setSearchParams({ search: searchValue });
     } else {
       setSearchParams({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue]);
+  }, [searchValue, setSearchParams]);
 
   const filteredTools = tools
     .filter((tool) => {
@@ -72,7 +70,6 @@ const Tools: React.FC = () => {
     );
   }
 
-  // FRAMER MOTION VARIANTS
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: (stagger = 0.06) => ({
@@ -86,54 +83,40 @@ const Tools: React.FC = () => {
     visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.36, ease: [0.2, 0.8, 0.2, 1] } },
   };
 
-  // navigate to submit/:id for editing
   const handleEditNavigate = (toolId: string) => {
     navigate(`/submit/${toolId}`);
   };
 
   return (
     <main className="container py-6">
-      <div className="space-y-8">
-        <SearchBar
-          value={searchValue}
-          onChange={setSearchValue}
-        />
-        <div className="space-y-6">
-          <div className="w-full overflow-x-auto pb-4">
-            <div className="flex gap-4 min-w-min">
-              <CategoryFilter
-                selectedCategories={selectedCategories}
-                onChange={setSelectedCategories}
-              />
-            </div>
-          </div>
+      <div className="space-y-6">
+        <SearchBar value={searchValue} onChange={setSearchValue} />
 
-          {/* Animated grid */}
-          <motion.div
-            key={searchValue + selectedCategories.join(',')}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            variants={containerVariants}
-            initial={shouldReduceMotion ? 'visible' : 'hidden'}
-            animate="visible"
-            custom={0.06}
-          >
-            {filteredTools.map((tool) => (
-              <motion.div
-                key={tool.id}
-                variants={itemVariants}
-                whileHover={{ scale: shouldReduceMotion ? 1 : 1.02 }}
-                layout
-              >
-                <ToolCard
-                  tool={tool as any}
-                  isBookmarked={isBookmarked(tool.id)}
-                  toggleBookmark={() => toggleBookmark(tool)}
-                  onEdit={() => handleEditNavigate(tool.id)} // only edit
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="w-full sm:w-auto">
+            <CategoryFilter selectedCategories={selectedCategories} onChange={setSelectedCategories} />
+          </div>
         </div>
+
+        <motion.div
+          key={searchValue + selectedCategories.join(',')}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          variants={containerVariants}
+          initial={shouldReduceMotion ? 'visible' : 'hidden'}
+          animate="visible"
+          custom={0.06}
+        >
+          {filteredTools.map((tool) => (
+            <motion.div key={tool.id} variants={itemVariants} whileHover={{ scale: shouldReduceMotion ? 1 : 1.02 }} layout>
+              <ToolCard
+                tool={tool as any}
+                isBookmarked={isBookmarked(tool.id)}
+                toggleBookmark={() => toggleBookmark(tool)}
+                onEdit={() => handleEditNavigate(tool.id)}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
     </main>
   );

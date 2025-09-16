@@ -1,24 +1,22 @@
 // src/components/home/Testimonials.tsx
 import { useInView } from "./hooks";
+import { Star } from "lucide-react";
 
 const TESTIMONIALS = [
   {
     name: "Raghav Krishna",
     role: "Early user",
-    quote:
-      "I will use 3 AI tools daily I could save them here and visit often.",
+    quote: "I will use 3 AI tools daily — I can save them here and visit often.",
   },
   {
     name: "Masum Parvej",
     role: "Micro-SaaS builder",
-    quote:
-      "Submitted my tool and got first testers the same week. Exactly what I needed.",
+    quote: "Submitted my tool and got first testers the same week. Exactly what I needed.",
   },
   {
     name: "Shahriar Hasan",
     role: "Micro-SaaS builder",
-    quote:
-      "I built my first Micro-SaaS and this tool helped me get traffic like about 20 visitors in a day.",
+    quote: "I built my first Micro-SaaS and this tool helped me get traffic — about 20 visitors in a day.",
   },
 ];
 
@@ -29,12 +27,10 @@ export default function Testimonials() {
     <section className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-semibold">People are finding value</h2>
-        <p className="mt-2 text-muted-foreground">
-          A few words from early users and creators.
-        </p>
+        <p className="mt-2 text-muted-foreground">A few words from early users and creators.</p>
       </div>
 
-      <div ref={ref} className="grid md:grid-cols-3 gap-6">
+      <div ref={ref} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {TESTIMONIALS.map((t, idx) => (
           <div
             key={t.name}
@@ -52,6 +48,16 @@ export default function Testimonials() {
                 <div className="text-xs text-muted-foreground">{t.role}</div>
               </div>
             </div>
+
+            <div className="mb-4 flex items-center gap-1">
+              {/* 5 gold filled stars */}
+              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+            </div>
+
             <p className="text-sm text-muted-foreground leading-6">“{t.quote}”</p>
           </div>
         ))}

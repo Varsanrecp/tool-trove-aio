@@ -14,7 +14,7 @@ interface ToolCardProps {
   isBookmarked: boolean;
   toggleBookmark: () => void;
   onEdit?: () => void; // keep edit
-  // NOTE: onDelete intentionally removed
+  // delete intentionally removed per your request
 }
 
 export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit }: ToolCardProps) => {
@@ -45,19 +45,22 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit }: ToolCar
   const isOwner = !!user?.id && !!tool.user_id && user.id === tool.user_id;
 
   return (
-    <div className="glass rounded-lg overflow-hidden hover-card relative">
-      <div className="relative aspect-video">
-        <img
-          src={tool.imageUrl}
-          alt={tool.name}
-          className="object-cover w-full h-full"
-          loading="lazy"
-        />
+    <div className="glass rounded-lg overflow-hidden hover-card relative flex flex-col">
+      {/* image area */}
+      <div className="relative w-full">
+        <div className="w-full aspect-[16/9] bg-muted overflow-hidden">
+          <img
+            src={tool.imageUrl}
+            alt={tool.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
 
-        {/* Bookmark button */}
+        {/* bookmark */}
         <button
           onClick={toggleBookmark}
-          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
+          className="absolute top-3 right-3 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
           aria-label="Toggle bookmark"
         >
           <Bookmark
@@ -68,11 +71,11 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit }: ToolCar
           />
         </button>
 
-        {/* Manage (owner only) - only EDIT shown in modal */}
+        {/* manage (owner only) */}
         {isOwner && (
           <button
             onClick={() => setManageOpen(true)}
-            className="absolute top-4 right-12 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
+            className="absolute top-3 right-12 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors z-10"
             aria-label="Manage tool"
             title="Manage (edit)"
           >
@@ -80,57 +83,53 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit }: ToolCar
           </button>
         )}
 
-        <div className="absolute top-4 left-4 z-10">
+        {/* pricing badge */}
+        <div className="absolute top-3 left-3 z-10">
           <Badge className={cn("capitalize", getPricingColor(tool.pricing))}>
             {tool.pricing}
           </Badge>
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">{tool.name}</h3>
-            <p className="text-sm text-gray-400 mt-1">{tool.description}</p>
+      {/* content */}
+      <div className="p-4 flex-1 flex flex-col">
+        <div>
+          <h3 className="text-lg font-semibold text-white leading-snug">{tool.name}</h3>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{tool.description}</p>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex flex-wrap gap-2">
+            {Array.isArray(tool.tags) && tool.tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="capitalize">
+                {tag}
+              </Badge>
+            ))}
           </div>
         </div>
 
-        <div className="flex gap-2 mt-4 flex-wrap">
-          {Array.isArray(tool.tags) && tool.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="capitalize">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => handleVote('up')}
               className={cn(
-                "flex items-center gap-1 px-3 py-1 rounded-full transition-colors",
-                userVote === 'up' ? "bg-green-500/20" : "hover:bg-gray-700/20"
+                "flex items-center gap-1 px-2 py-1 rounded-full text-sm transition-colors",
+                userVote === 'up' ? "bg-green-500/20" : "hover:bg-gray-700/10"
               )}
             >
-              <ThumbsUp className={cn(
-                "w-4 h-4",
-                userVote === 'up' ? "text-green-500" : "text-gray-400"
-              )} />
-              <span className="text-sm text-gray-400">{toolVotes.upvotes}</span>
+              <ThumbsUp className={cn("w-4 h-4", userVote === 'up' ? "text-green-500" : "text-gray-400")} />
+              <span className="text-sm text-muted-foreground">{toolVotes.upvotes}</span>
             </button>
 
             <button
               onClick={() => handleVote('down')}
               className={cn(
-                "flex items-center gap-1 px-3 py-1 rounded-full transition-colors",
-                userVote === 'down' ? "bg-red-500/20" : "hover:bg-gray-700/20"
+                "flex items-center gap-1 px-2 py-1 rounded-full text-sm transition-colors",
+                userVote === 'down' ? "bg-red-500/20" : "hover:bg-gray-700/10"
               )}
             >
-              <ThumbsDown className={cn(
-                "w-4 h-4",
-                userVote === 'down' ? "text-red-500" : "text-gray-400"
-              )} />
-              <span className="text-sm text-gray-400">{toolVotes.downvotes}</span>
+              <ThumbsDown className={cn("w-4 h-4", userVote === 'down' ? "text-red-500" : "text-gray-400")} />
+              <span className="text-sm text-muted-foreground">{toolVotes.downvotes}</span>
             </button>
           </div>
 
@@ -138,14 +137,14 @@ export const ToolCard = ({ tool, isBookmarked, toggleBookmark, onEdit }: ToolCar
             href={tool.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-9 px-4 py-2 hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-9 px-3 py-2 hover:opacity-90 transition-opacity"
           >
             Visit Tool
           </a>
         </div>
       </div>
 
-      {/* Manage modal - only Edit & Cancel (no Delete) */}
+      {/* manage modal (edit only) */}
       {manageOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setManageOpen(false)} />
