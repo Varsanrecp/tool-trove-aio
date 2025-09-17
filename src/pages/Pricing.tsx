@@ -2,15 +2,18 @@
 import React from "react";
 import { usePaymentHandler } from "@/hooks/usePaymentHandler";
 import { PricingCard } from "@/components/pricing/PricingCard";
+import PricingHero from "@/components/home/PricingHero";
+import OfferBanner from "@/components/home/OfferBanner";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useUser } from "@clerk/clerk-react";
 
 const PricingPage: React.FC = () => {
-  // read display currency & price
-  const { currencySymbol, premiumPriceNumber } = useCurrency();
-
-  // keep using your existing payment handler (unchanged behavior)
-  // NOTE: payment handler still uses the backend / Razorpay flow you already have
   const { handleFreeSignup, handlePremiumSignup } = usePaymentHandler();
+  const currency = (useCurrency() as any) ?? { currencySymbol: "$", premiumPriceNumber: 2 };
+  const currencySymbol = currency.currencySymbol ?? "$";
+  const premiumPriceNumber = Number(currency.premiumPriceNumber ?? 2);
+
+  const { isSignedIn } = useUser();
 
   const freeFeatures = [
     "Access to all AI tools",
@@ -25,23 +28,40 @@ const PricingPage: React.FC = () => {
     "Early access to new features",
   ];
 
+  const handlePremium = () => {
+    if (!isSignedIn) {
+      (document.querySelector<HTMLButtonElement>('[data-clerk-trigger]') as HTMLButtonElement | null)?.click();
+      return;
+    }
+    handlePremiumSignup();
+  };
+
+  const handleFree = () => {
+    if (!isSignedIn) {
+      (document.querySelector<HTMLButtonElement>('[data-clerk-trigger]') as HTMLButtonElement | null)?.click();
+      return;
+    }
+    handleFreeSignup();
+  };
+
   return (
     <main className="container py-12">
-      <div className="text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold">Simple, Transparent Pricing</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Choose the plan that's right for you and start exploring AI tools today
-        </p>
-      </div>
+      <OfferBanner place="pricing" />
+      <PricingHero
+        audience="user"
+        onChangeAudience={() => {}}
+        currencySymbol={currencySymbol}
+        premiumPriceNumber={premiumPriceNumber}
+      />
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+      <div className="mt-10 grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
         <PricingCard
           title="Free Plan"
           price="0"
           currency={currencySymbol}
           features={freeFeatures}
           buttonText="Get Started"
-          onSubscribe={handleFreeSignup}
+          onSubscribe={handleFree}
         />
 
         <PricingCard
@@ -50,7 +70,7 @@ const PricingPage: React.FC = () => {
           currency={currencySymbol}
           features={premiumFeatures}
           buttonText="Upgrade Now"
-          onSubscribe={handlePremiumSignup}
+          onSubscribe={handlePremium}
           variant="premium"
         />
       </div>

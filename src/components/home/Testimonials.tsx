@@ -1,4 +1,5 @@
 // src/components/home/Testimonials.tsx
+import React from "react";
 import { useInView } from "./hooks";
 import { Star } from "lucide-react";
 
@@ -6,7 +7,7 @@ const TESTIMONIALS = [
   {
     name: "Raghav Krishna",
     role: "Early user",
-    quote: "I will use 3 AI tools daily — I can save them here and visit often.",
+    quote: "I use 3 AI tools daily — I saved them here and visit often.",
   },
   {
     name: "Masum Parvej",
@@ -16,7 +17,7 @@ const TESTIMONIALS = [
   {
     name: "Shahriar Hasan",
     role: "Micro-SaaS builder",
-    quote: "I built my first Micro-SaaS and this tool helped me get traffic — about 20 visitors in a day.",
+    quote: "I built my first Micro-SaaS and this tool helped me get traffic quickly.",
   },
 ];
 
@@ -50,12 +51,16 @@ export default function Testimonials() {
             </div>
 
             <div className="mb-4 flex items-center gap-1">
-              {/* 5 gold filled stars */}
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-              <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
+              {/* Full gold filled stars */}
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  stroke="none"
+                  style={{ color: "#f6c024" }}
+                />
+              ))}
             </div>
 
             <p className="text-sm text-muted-foreground leading-6">“{t.quote}”</p>

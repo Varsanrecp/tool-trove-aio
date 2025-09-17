@@ -13,6 +13,7 @@ import PricingPage from "./pages/Pricing";
 import LearnAI from "./pages/LearnAI";
 
 import { PageTransition } from "@/components/Motion";
+import Footer from "@/components/Footer";
 
 function App() {
   const location = useLocation();
@@ -34,6 +35,9 @@ function App() {
           <Route path="/learn-ai" element={<PageTransition><LearnAI /></PageTransition>} />
         </Routes>
       </AnimatePresence>
+
+      <Footer />
+
       <Toaster />
     </div>
   );

@@ -1,10 +1,10 @@
 // src/components/Header.tsx
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Wrench, Bookmark, Mail, Plus, Menu, X } from 'lucide-react';
-import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/clerk-react';
-import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, Wrench, Bookmark, Mail, Plus, Menu, X, DollarSign } from "lucide-react";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 export const Header: React.FC = () => {
   const location = useLocation();
@@ -14,8 +14,8 @@ export const Header: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleHomeClick = () => {
-    if (location.pathname === '/') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (location.pathname === "/") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -38,7 +38,7 @@ export const Header: React.FC = () => {
               onClick={handleHomeClick}
               className={cn(
                 "flex items-center space-x-2 transition-colors hover:text-primary",
-                isActive('/') ? "text-primary" : "text-muted-foreground"
+                isActive("/") ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Home className="h-4 w-4" />
@@ -47,7 +47,7 @@ export const Header: React.FC = () => {
 
             <Link
               to="/learn-ai"
-              className={cn("transition-colors hover:text-primary", isActive('/learn-ai') ? "text-primary" : "text-muted-foreground")}
+              className={cn("transition-colors hover:text-primary", isActive("/learn-ai") ? "text-primary" : "text-muted-foreground")}
             >
               Learn AI
             </Link>
@@ -56,11 +56,22 @@ export const Header: React.FC = () => {
               to="/tools"
               className={cn(
                 "flex items-center space-x-2 transition-colors hover:text-primary",
-                isActive('/tools') ? "text-primary" : "text-muted-foreground"
+                isActive("/tools") ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Wrench className="h-4 w-4" />
               <span>Tools</span>
+            </Link>
+
+            <Link
+              to="/pricing"
+              className={cn(
+                "flex items-center space-x-2 transition-colors hover:text-primary",
+                isActive("/pricing") ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <DollarSign className="h-4 w-4" />
+              <span>Pricing</span>
             </Link>
 
             {isSignedIn && (
@@ -69,7 +80,7 @@ export const Header: React.FC = () => {
                   to="/saved"
                   className={cn(
                     "flex items-center space-x-2 transition-colors hover:text-primary",
-                    isActive('/saved') ? "text-primary" : "text-muted-foreground"
+                    isActive("/saved") ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   <Bookmark className="h-4 w-4" />
@@ -80,7 +91,7 @@ export const Header: React.FC = () => {
                   to="/submit"
                   className={cn(
                     "flex items-center space-x-2 transition-colors hover:text-primary",
-                    isActive('/submit') ? "text-primary" : "text-muted-foreground"
+                    isActive("/submit") ? "text-primary" : "text-muted-foreground"
                   )}
                 >
                   <Plus className="h-4 w-4" />
@@ -93,7 +104,7 @@ export const Header: React.FC = () => {
               to="/contact"
               className={cn(
                 "flex items-center space-x-2 transition-colors hover:text-primary",
-                isActive('/contact') ? "text-primary" : "text-muted-foreground"
+                isActive("/contact") ? "text-primary" : "text-muted-foreground"
               )}
             >
               <Mail className="h-4 w-4" />
@@ -168,6 +179,10 @@ export const Header: React.FC = () => {
 
                 <Link to="/tools" onClick={() => setMenuOpen(false)} className={cn(isActive('/tools') ? "text-primary" : "text-muted-foreground")}>
                   Tools
+                </Link>
+
+                <Link to="/pricing" onClick={() => setMenuOpen(false)} className={cn(isActive('/pricing') ? "text-primary" : "text-muted-foreground")}>
+                  Pricing
                 </Link>
 
                 {isSignedIn && (
